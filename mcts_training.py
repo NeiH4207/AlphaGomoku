@@ -18,7 +18,7 @@ args = dotdict({
     'height':  10,
     'width': 10,
     'show_screen': False,
-    'n_rows': 4,
+    'n_in_rows': 4,
     'exp_rate': 0.3,
     'numIters': 1000,
     'nCompare': 30,
@@ -29,10 +29,8 @@ args = dotdict({
     'numMCTSSims':10,           # Number of games moves for MCTS to simulate.
     'arenaCompare': 40,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1,
-    'colab_train': False,
-    'colab_dir': "/content/drive/MyDrive/trainned_model/agent_mcts.pt",
     'checkpoint': './temp/',
-    'load_model': True,
+    'load_model': False,
     'load_folder_file_1': ('Models','nnet3.pt'),
     'load_folder_file_2': ('Models','pnet3.pt'),
     'numItersForTrainExamplesHistory': 10,

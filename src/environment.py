@@ -144,114 +144,44 @@ class Environment(object):
                     valids[h * self.width + w] = 1
         return np.array(valids)
     
-    def is_outside(self, x, y):
-        return x < 0 or x >= self.width or y < 0 or y >= self.height
-    
-    def is_inside(self, x, y):
-        return x >= 0 and x < self.width and y >= 0 and y < self.height
+    # function to check x1, y1, x2, y2 in board
+    def in_board(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0):
+        if x1 < 0 or x1 >= self.height or y1 < 0 or y1 >= self.width:
+            return False
+        if x2 < 0 or x2 >= self.height or y2 < 0 or y2 >= self.width:
+            return False
+        return True
     
     def check_game_ended(self, board, playerID, action):
-        n_rows = self.args.n_rows
         x, y = action
         
-        dx = [0, 1, 0, -1]
-        dy = [1, 0, -1, 0]
+        # dx, dy for 8 directions
+        dx = [1, 1, 1, 0, -1, -1, -1, 0]
+        dy = [1, 0, -1, -1, -1, 0, 1, 1]
         
         for i in range(4):
             x1, x2, y1, y2 = x, x, y, y
-            while self.is_inside(x1, y) and board.get_state()[playerID][x1][y] == 1:
-                x1 -= 1
-                horizontal += 1
+            n_in_rows = 0
+            
+            while self.in_board(x1, y1) and board.get_state()[playerID][x1][y1] == 1:
+                x1 += dx[i]
+                y1 += dy[i]
+                n_in_rows += 1
                 
-            while self.is_inside(x2, y) and board.get_state()[playerID][x2][y] == 1:
-                x2 += 1
-                horizontal += 1
+            while self.in_board(x2, y2) and board.get_state()[playerID][x2][y2] == 1:
+                x2 += dx[i + 4]
+                y2 += dy[i + 4]
+                n_in_rows += 1
+            
+            if n_in_rows > self.args.n_in_rows:
+                return True
+            
+            if n_in_rows == self.args.n_in_rows:
+                if not self.in_board(x1, y1, x2, y2):
+                    return True
+                if board.get_state()[playerID][x1][y1] == 0 or board.get_state()[playerID][x2][y2] == 0:
+                    return True
                 
-            
-            
-        
-        horizontal = -1
-        
-        """ HORIZONTAL """
-        if horizontal > n_rows:
-            return True
-        
-        if x1 < 0 or x2 >= self.width:
-            if horizontal == n_rows:
-                return True
-        else:
-            if horizontal == n_rows and (board.get_state()[1 - playerID][x1][y] == 0 or board.get_state()[1 - playerID][x2][y] == 0):
-                return True
-            
-        """ VERTICAL """
-        x1, x2, y1, y2 = x, x, y, y
-        vertical = -1
-        
-        while self.is_inside(x, y1) and board.get_state()[playerID][x][y1] == 1:
-            y1 -= 1
-            vertical += 1
-            
-        while self.is_inside(x, y2) and board.get_state()[playerID][x][y2] == 1:
-            y2 += 1
-            vertical += 1
-            
-        if vertical > n_rows:
-            return True
-        
-        if y1 < 0 or y2 >= self.height:
-            if vertical == n_rows:
-                return True
-        else:
-            if vertical == n_rows and (board.get_state()[1 - playerID][x][y1] == 0 or board.get_state()[1 - playerID][x][y2] == 0):
-                return True
-        
-        """ DIAGONAL \ """
-        x1, x2, y1, y2 = x, x, y, y
-        diagonal = -1
-        
-        while self.is_inside(x1, y1) and board.get_state()[playerID][x1][y1] == 1:
-            x1 -= 1
-            y1 -= 1
-            diagonal += 1
-            
-        while self.is_inside(x2, y2) and board.get_state()[playerID][x2][y2] == 1:
-            x2 += 1
-            y2 += 1
-            diagonal += 1
-            
-        if diagonal > n_rows:
-            return True
-        
-        if diagonal == n_rows:
-            if (self.is_outside(x1, y1)) or (self.is_outside(x2, y2)):
-                return True
-            if (board.get_state()[1 - playerID][x1][y1] == 0 or board.get_state()[1 - playerID][x2][y2] == 0):
-                return True            
-            
-        """ DIAGONAL / """
-        x1, x2, y1, y2 = x, x, y, y
-        diagonal = -1
-        
-        while self.is_inside(x1, y1) and board.get_state()[playerID][x1][y1] == 1:
-            x1 -= 1
-            y1 += 1
-            diagonal += 1
-            
-        while self.is_inside(x2, y2) and board.get_state()[playerID][x2][y2] == 1:
-            x2 += 1
-            y2 -= 1
-            diagonal += 1
-            
-        if diagonal > n_rows:
-            return True
-        
-        if diagonal == n_rows:
-            if (self.is_outside(x1, y1)) or (self.is_outside(x2, y2)):
-                return True
-            if (board.get_state()[1 - playerID][x1][y1] == 0 or board.get_state()[1 - playerID][x2][y2] == 0):
-                return True
-        
-        return False
             
     def convert_action_v2c(self, action):
         for i in range(action):
