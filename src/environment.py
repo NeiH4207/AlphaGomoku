@@ -4,26 +4,51 @@ from GameBoard.game_board import Screen
 from src.utils import flatten
 import numpy as np
 
-class Player(object):
-    
-    def __init__(self, ID):
-        self.ID = ID
-        self.n_wins = 0
+# Gomoku player class
+class Player:
+    def __init__(self, name = None, symbol = None, color = None):
+        self.name = name
+        self.symbol = symbol
+        self.color = color
+        self.score = 0
+        self.last_move = None
+        self.n_moves = 0
         
-    def reset(self):
-        self.n_wins = 0
-        
+    def reset_score(self):
+        self.score = 0
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
+    def __eq__(self, other):
+        return self.name == other.name
+
 class Board(object):
     def __init__(self, height, width):
         self.height = height
         self.width = width
         self.board = np.zeros((2, height, width))
+        self.n_marks = 0
     
     def get_state(self):
-        return self.board
+        return dcopy(self.board)
     
-    def set(self, id, x, y, value):
+    def in_bounds(self, x, y):
+        return x >= 0 and x < self.width and y >= 0 and y < self.height
+    
+    def is_empty(self, x, y):
+        return self.board[0][x][y] == 0 and self.board[1][x][y] == 0
+    
+    def set(self, id, x, y, value = 1):
         self.board[id][x][y] = value
+        if value != 0:
+            self.n_marks += 1
+            
+    def is_fully(self):
+        return self.n_marks == self.height * self.width
     
     def to_opp(self):
         self.board = np.flip(self.board, 0)
@@ -71,13 +96,13 @@ class Environment(object):
         self.max_n_agents = 1
         self.height = args.height
         self.width = args.width
-        self.board = Board(args.height, args.width)
         self.max_n_turns = self.height * self.width
         self.n_actions = self.max_n_turns
         self.num_players = 2
         self.players = [Player(i) for i in range(self.num_players)]
-        self.screen = Screen(self)
-        self.reset()
+        if args.show_screen:
+            self.screen = Screen(self)
+            self.screen.init()
     
     """ run in a screen """
     def play(self):
@@ -85,19 +110,25 @@ class Environment(object):
             raise ValueError('Screen mode unable!')
         self.screen.start()
     
+    def get_new_board(self):
+        return Board(self.height, self.width)
+    
     def reset(self):
-        self.board.reset()
-        
+        self.players[0].reset_score()
+        self.players[1].reset_score()
+        self.restart()
+            
+    def restart(self):
         if self.show_screen:
-            self.screen.setup(self)
+            self.screen.reset()
         
     """ return a reward after implement action """
     def get_game_ended(self, board, action):
         action = self.convert_action_i2c(action) 
         if self.check_game_ended(board, 1, action):
-            return (True, 1)
+            return (True, -1)
         
-        if np.sum(board.get_state()) == self.n_actions:
+        if board.is_fully():
             return (True, 0)
         
         return (False, 0)
@@ -134,18 +165,23 @@ class Environment(object):
             .reshape(-1, self.n_inputs, self.height, self.width)
         return states
     
+    def is_valid_move(self, board, x, y):
+        # check if action is valid
+        if board.in_bounds(x, y) and board.is_empty(x, y):
+            return True
+    
     def get_valid_moves(self, board):
         # return a fixed size binary vector
         valids = [0] * self.n_actions
-        _board = board.get_state()
+        board = board.get_state()
         for h in range(self.height):
             for w in range(self.width):
-                if _board[0][h][w] + _board[1][h][w] == 0:
+                if board[0][h][w] + board[1][h][w] == 0:
                     valids[h * self.width + w] = 1
         return np.array(valids)
     
-    # function to check x1, y1, x2, y2 in board
     def in_board(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0):
+        # check if the point is in board
         if x1 < 0 or x1 >= self.height or y1 < 0 or y1 >= self.width:
             return False
         if x2 < 0 or x2 >= self.height or y2 < 0 or y2 >= self.width:
@@ -153,15 +189,14 @@ class Environment(object):
         return True
     
     def check_game_ended(self, board, playerID, action):
+        # check if the game is ended
         x, y = action
-        
-        # dx, dy for 8 directions
         dx = [1, 1, 1, 0, -1, -1, -1, 0]
         dy = [1, 0, -1, -1, -1, 0, 1, 1]
         
         for i in range(4):
             x1, x2, y1, y2 = x, x, y, y
-            n_in_rows = 0
+            n_in_rows = -1
             
             while self.in_board(x1, y1) and board.get_state()[playerID][x1][y1] == 1:
                 x1 += dx[i]
@@ -181,33 +216,55 @@ class Environment(object):
                     return True
                 if board.get_state()[playerID][x1][y1] == 0 or board.get_state()[playerID][x2][y2] == 0:
                     return True
-                
-            
+        return False
+    
+    # convert action vector to coordinate
     def convert_action_v2c(self, action):
-        for i in range(action):
+        if not isinstance(action, list):
+            raise ValueError('Action must be list!')
+        for i in range(len(action)):
             if action[i] == 1:
                 return [int(i / self.width), i % self.width]
             
+    # convert action vector to int value
+    def convert_action_v2i(self, action):
+        return np.argmax(action)
+            
     # convert action from int to coordinate
     def convert_action_i2c(self, action):
-        return [int(action / self.width), action % self.width]
+        if isinstance(action, np.int64) or isinstance(action, int) or isinstance(action, np.int32):
+            return (int(action / self.width), action % self.width)
+        else:
+            raise ValueError('Action must be numeric!')
     
     # convert action from coordinate to int
     def convert_action_c2i(self, action):
-        return action[0] * self.width + action[1]
+        # action need to be a tuple or two element list
+        if isinstance(action, list):
+            action = tuple(action)
+        if isinstance(action, tuple):
+            return action[0] * self.width + action[1]
+        else:
+            raise ValueError('Action must be a tuple or two element list')
     
     # convert action from int to vector
     def convert_action_i2v(self, action):
+        # check action is numeric or not
+        if not isinstance(action, int):
+            raise ValueError('Action must be numeric!')
         _action =  [0] * self.n_actions
         _action[action] = 1
         return _action
     
     # get next state after implement action
-    def get_next_state(self, board, action, playerID = None, render = False):
-        action = self.convert_action_i2c(action)        
-        x, y = action
+    def get_next_state(self, board, action, playerID=None, render=False):
+        # convert action from int to coordinate
+        if isinstance(action, np.int64) or isinstance(action, int) or isinstance(action, np.int32):
+            action = self.convert_action_i2c(action)
+            
         board = board.copy()
-        board.set(0, x, y, 1)
+        x, y = action
+        board.set(0, x, y)
         
         if render: # display on screen
             assert(playerID != None)

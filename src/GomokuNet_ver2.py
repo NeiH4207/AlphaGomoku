@@ -20,10 +20,10 @@ def fanin_init(size, fanin=None):
 args = dotdict({
     'lr': 0.001,
     'dropout': 0.3,
-    'epochs': 3,
+    'epochs': 20,
     'batch_size': 64,
     'cuda': torch.cuda.is_available(),
-    'num_channels': 256,
+    'num_channels': 32,
     'optimizer': 'adas',
 })
 
@@ -86,7 +86,7 @@ class ResNet(nn.Module):
         out = self.layer3(out)
         return out
     
-class CaroNet(nn.Module):
+class GomokuNet(nn.Module):
     def __init__(self, env):
         # game params
         self.args = args
@@ -98,7 +98,7 @@ class CaroNet(nn.Module):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self._elo = [0]
 
-        super(CaroNet, self).__init__()
+        super(GomokuNet, self).__init__()
         self.conv1 = nn.Conv2d(self.n_inputs, args.num_channels, 3, stride=1, padding=1).to(self.device)
         self.conv2 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1, padding=1).to(self.device)
         self.conv3 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1).to(self.device)
@@ -120,21 +120,21 @@ class CaroNet(nn.Module):
 
 
         # self.last_channel_size = args.num_channels * (self.board_x - 4) * (self.board_y - 4)
-        self.fc1 = nn.Linear(self.last_dim, 1024).to(self.device)
-        self.fc_bn1 = nn.BatchNorm1d(1024).to(self.device)
+        self.fc1 = nn.Linear(self.last_dim, 128).to(self.device)
+        self.fc_bn1 = nn.BatchNorm1d(128).to(self.device)
 
-        self.fc2 = nn.Linear(1024, 512).to(self.device)
-        self.fc_bn2 = nn.BatchNorm1d(512).to(self.device)
+        self.fc2 = nn.Linear(128, 62).to(self.device)
+        self.fc_bn2 = nn.BatchNorm1d(62).to(self.device)
 
-        self.fc3 = nn.Linear(self.last_dim, 1024).to(self.device)
-        self.fc_bn3 = nn.BatchNorm1d(1024).to(self.device)
+        self.fc3 = nn.Linear(self.last_dim, 128).to(self.device)
+        self.fc_bn3 = nn.BatchNorm1d(128).to(self.device)
 
-        self.fc4 = nn.Linear(1024, 512).to(self.device)
-        self.fc_bn4 = nn.BatchNorm1d(512).to(self.device)
+        self.fc4 = nn.Linear(128, 62).to(self.device)
+        self.fc_bn4 = nn.BatchNorm1d(62).to(self.device)
 
-        self.fc5 = nn.Linear(512, self.action_size).to(self.device)
+        self.fc5 = nn.Linear(62, self.action_size).to(self.device)
 
-        self.fc6 = nn.Linear(512, 1).to(self.device)
+        self.fc6 = nn.Linear(62, 1).to(self.device)
         
         self.entropies = 0
         self.pi_losses = AverageMeter()
@@ -158,13 +158,13 @@ class CaroNet(nn.Module):
         # s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
         # s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
         s = F.relu(self.resnet(s))
-        pi = F.relu(self.bn5(self.conv5(s))) 
-        pi = pi.view(-1, self.last_dim)
+        # pi = F.relu(self.bn5(self.conv5(s))) 
+        pi = s.view(-1, self.last_dim)
         pi = F.dropout(F.relu(self.fc1(pi)), p=args.dropout, training=self.training)  # batch_size x 1024
         pi = F.relu(self.fc2(pi))  # batch_size x 512
         
-        v = F.relu(self.bn6(self.conv6(s))) 
-        v = v.view(-1, self.last_dim)
+        # v = F.relu(self.bn6(self.conv6(s))) 
+        v = s.view(-1, self.last_dim)
         v = F.dropout((F.relu(self.fc3(v))), p=args.dropout, training=self.training)  # batch_size x 1024
         v = F.relu(self.fc4(v)) # batch_size x 512
         pi = self.fc5(pi)                                                                         # batch_size x action_size

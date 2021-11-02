@@ -77,15 +77,9 @@ class MCTS():
         s = board.string_representation()
          
         terminate = False
-        if s not in self.Es and last_action != None:
+        if last_action != None:
             terminate, self.Es[s] = self.game.get_game_ended(board, last_action)
-        
-        if last_action == None:
-            self.Es[s] = 0
-        
-        if terminate:
-            # terminal node
-            return -self.Es[s]
+            if terminate: return -self.Es[s]
 
         if s not in self.Ps:
             # leaf node
@@ -106,6 +100,7 @@ class MCTS():
                 # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.   
                 log.error("All valid moves were masked, doing a workaround.")
                 self.Ps[s] += 1 / self.game.n_actions
+                return 0
      
         valids = self.Vs[s]
         cur_best = -float('inf')

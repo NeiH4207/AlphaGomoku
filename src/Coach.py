@@ -5,7 +5,7 @@ from collections import deque
 from pickle import Pickler, Unpickler
 from src.machine import Machine
 from random import shuffle
-from src.CaroNet import CaroNet
+from src.GomokuNet_ver2 import GomokuNet
 from src.machine import Machine
 from src.evaluate import Evaluation
 import numpy as np
@@ -25,7 +25,7 @@ class Coach():
     def __init__(self, game, nnet, args):
         self.game = game
         self.nnet = nnet
-        self.pnet = self.nnet.__class__(self.game)  # the competitor network
+        self.pnet = GomokuNet(self.game)  # the competitor network
         self.args = args
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
@@ -48,7 +48,8 @@ class Coach():
                            the player eventually won the game, else -1.
         """
         trainExamples = []
-        board = self.game.board
+        self.game.restart()
+        board = self.game.get_new_board()
         episodeStep = 0
         player_ID = 0
         
@@ -64,10 +65,10 @@ class Coach():
             terminate, r = self.game.get_game_ended(board, action)
             if terminate:
                 if r != 0:
-                    self.game.players[player_ID].n_wins += 1
+                    self.game.players[player_ID].score += 1
+                
                 self.iterationTrainExamples += [(x[0], x[1], r * ((-1) ** (x[2] == player_ID))) 
                                                 for x in trainExamples]
-                self.game.reset()
                 break
             
             player_ID = 1 - player_ID
@@ -114,34 +115,34 @@ class Coach():
         self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
                              filename=self.args.load_folder_file_1[1])
         
-        self.pnet.load_checkpoint(self.args.load_folder_file_1[0], self.args.load_folder_file_1[1])
+        self.pnet.load_checkpoint(self.args.load_folder_file_1[0], 
+                                  self.args.load_folder_file_1[1])
         
         # training new network, keeping a copy of the old one
         self.nnet.train_examples(trainExamples)
         self.game.render()
-        eval = Evaluation(self.game)
+        eval = Evaluation(self.game, self.nnet, self.pnet)
 
         print('PITTING AGAINST PREVIOUS VERSION')
-        nwins, pwins, draws = eval.run(self.nnet, self.pnet)
+        nwins, pwins, draws = eval.run()
 
         print('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
+        print('NNET ELO:', self.nnet.elo)
+        print('PNET ELO:', self.pnet.elo)
         if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
             print('REJECTING NEW MODEL')
-            self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
-                                 filename='rejected_' + self.args.load_folder_file_1[1])
-            self.nnet = self.pnet
-        else:
-            print('ACCEPTING NEW MODEL')
-            print('NNET ELO:', self.nnet.elo)
-            print('PNET ELO:', self.pnet.elo)
             self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
                                  filename=self.args.load_folder_file_1[1])
             self.pnet.save_checkpoint(folder=self.args.load_folder_file_2[0], 
                                  filename=self.args.load_folder_file_2[1])
-        
-        if self.args.colab_train:
-            self.nnet.save_colab_model(self.args.colab_dir)
-
+            # self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
+            #                      filename='rejected_' + self.args.load_folder_file_1[1])
+        else:
+            print('ACCEPTING NEW MODEL')
+            self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
+                                 filename=self.args.load_folder_file_1[1])
+            self.pnet.save_checkpoint(folder=self.args.load_folder_file_2[0], 
+                                 filename=self.args.load_folder_file_2[1])
         
     def getCheckpointFile(self):
         return 'checkpoint_' + 'pt'

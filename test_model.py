@@ -3,7 +3,7 @@ from src.environment import Environment
 
 from src.utils import dotdict
 from src.model import Policy
-from src.CaroNet import CaroNet
+from src.GomokuNet_ver2 import GomokuNet
 from src.evaluate import Evaluation
 from random import seed
 seed(0)
@@ -22,16 +22,15 @@ def main():
         'mem_size': 10000,
         'mode': 'test-machine',
         'saved_model': True ,
-        'load_folder_file_1': ('Models','nnet.pt'),
-        'load_folder_file_2': ('Models','nnet2.pt')
+        'load_folder_file_1': ('Models','nnet2.pt'),
+        'load_folder_file_2': ('Models','rejected_nnet2.pt')
     })
 
     env = Environment(args)
-    nnet = Policy(env)
+    nnet = GomokuNet(env)
     nnet.load_checkpoint(args.load_folder_file_1[0], args.load_folder_file_1[1])
-    pnet = CaroNet(env)
+    pnet = GomokuNet(env)
     pnet.load_checkpoint(args.load_folder_file_2[0], args.load_folder_file_2[1])
-    # pnet.load_checkpoint(args.load_folder_file_2[0], args.load_folder_file_2[1])
 
     print('OLD ELO: {} / {}'.format(nnet.elo, pnet.elo))
     eval = Evaluation(env, nnet, pnet)

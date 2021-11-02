@@ -254,19 +254,17 @@ def best_move(board,col):
     '''
     trả lại điểm số của mảng trong lợi thế của từng màu
     '''
-    new_board = deepcopy(board)
-    if len (board) == 2:
-        new_board = deepcopy(board[0])
-        m = len(board[0])
-        n = len(board[0][0])
-        for i in range(m):
-            for j in range(m):
-                if new_board[j][i] == 1:
-                    new_board[j][i] = 'w'
-                elif board[1][j][i] == 1:
-                    new_board[j][i] = 'b'
-                else:
-                    new_board[j][i] = ' '
+    new_board = deepcopy(board[0].tolist())
+    m = len(board[0])
+    n = len(board[0][0])
+    for i in range(m):
+        for j in range(m):
+            if new_board[j][i] == 1:
+                new_board[j][i] = 'w'
+            elif board[1][j][i] == 1:
+                new_board[j][i] = 'b'
+            else:
+                new_board[j][i] = ' '
         if col == 1:
             col = 'b'
         else:

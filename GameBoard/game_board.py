@@ -22,14 +22,15 @@ class Screen():
             self.env = env
             self.WIDTH = 800
             self.HEIGHT = 800
+            self.h = env.height
+            self.w = env.width
             self.LINE_WIDTH = 1
             self.SQUARE_SIZE = int(self.HEIGHT / 20)
             self.color_A = (255, 172,  88)
             self.color_B = (129, 188, 255)
             self.dir_path = os.path.dirname(os.path.realpath(__file__))
-            if env.show_screen:
-                self.load_image()
-                pygame.display.set_caption( 'ProCon-2020' ) 
+            self.load_image()
+            pygame.display.set_caption( 'ProCon-2020' ) 
 
     def render(self):
         pygame.display.update()
@@ -49,9 +50,7 @@ class Screen():
     def coord(self, x, y):
         return x * self.SQUARE_SIZE, y * self.SQUARE_SIZE
     
-    def setup(self, env): 
-        self.h = env.height
-        self.w = env.width
+    def init(self): 
         self.screen = pygame.display.set_mode(self.coord(self.h + 8, self.w))  
         self.screen.fill( BG_COLOR )
         self.draw_lines()
@@ -66,8 +65,8 @@ class Screen():
         
         color = (255, 178, 21)
         
-        SA = myFont.render("    : " + str(self.env.players[0].n_wins), 0, color)
-        SB = myFont.render("    : " + str(self.env.players[1].n_wins), 0, color)
+        SA = myFont.render("    : " + str(self.env.players[0].score), 0, color)
+        SB = myFont.render("    : " + str(self.env.players[1].score), 0, color)
         
     
         self.screen.blit(SA, self.coord(self.h + 1, 1))
@@ -83,25 +82,15 @@ class Screen():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
-                
                 if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                    mouseX = event.pos[0] # x
-                    mouseY = event.pos[1] # y
+                    mouseX = event.pos[1] # x
+                    mouseY = event.pos[0] # y
                     
-                    clicked_row = int(mouseY // self.SQUARE_SIZE)
-                    clicked_col = int(mouseX // self.SQUARE_SIZE)
-                    x = clicked_col
-                    y = clicked_row
-                    if self.env.board[player][x][y] + self.env.board[1 - player][x][y] == 0:
-                        self.draw(x, y, player)
-                        self.env.board[player][x][y] = 1
-                        self.render()
-                        if self.env.check_game_ended(self.env.board, player, (x, y)):
-                            self.env.players[player].n_wins += 1
-                            self.reset_screen()
-                        
+                    x = int(mouseY // self.SQUARE_SIZE)
+                    y = int(mouseX // self.SQUARE_SIZE)
+                    if board.get_state()[0][x][y] + board.get_state()[1][x][y] == 0:
+                        board = self.env.get_next_state(board, player, (x, y))
                         player = 1 - player
-                        
                         
             pygame.display.update()
             
@@ -109,6 +98,9 @@ class Screen():
         player_img = self.agent_A_img if player_ID == 0 else self.agent_B_img
         self.screen.blit(player_img, self.coord(x, y))
         
+    def reset_squares(self, x1, y1, x2, y2):
+        color = BG_COLOR
+        pygame.draw.rect(self.screen, color, (x1, y1, x2, y2))
     
     def draw_lines(self):
         for i in range(self.w):
@@ -118,13 +110,8 @@ class Screen():
             pygame.draw.line(self.screen, LINE_COLOR, (i * self.SQUARE_SIZE, 0),
                              (i * self.SQUARE_SIZE, self.w * self.SQUARE_SIZE), self.LINE_WIDTH )
         
-    def reset_screen(self):
+    def reset(self):
         self.screen.fill( BG_COLOR )
         self.screen.blit(self.background_img, self.coord(self.h, 0))
         self.draw_lines()
-        for i in range(self.h):
-            for j in range(self.w):
-                self.env.board[0][i][j] = 0
-                self.env.board[1][i][j] = 0
-                    
         self.show_infor_winner()
