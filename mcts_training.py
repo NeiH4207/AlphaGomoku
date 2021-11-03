@@ -7,7 +7,7 @@ from __future__ import division
 import logging
 from src.environment import Environment
 from src.model import Policy
-from src.GomokuNet_ver2 import GomokuNet
+from src.GomokuNet import GomokuNet
 from src.Coach import Coach
 from src.utils import dotdict
 log = logging.getLogger(__name__)
@@ -15,10 +15,10 @@ log = logging.getLogger(__name__)
 args = dotdict({
     'run_mode': 'train',
     'visualize': False,
-    'height':  7,
-    'width': 7,
+    'height':  14,
+    'width': 14,
     'show_screen': True,
-    'n_in_rows': 3,
+    'n_in_rows': 5,
     'exp_rate': 0.3,
     'numIters': 1000,
     'nCompare': 50,             # Number of games to play during arena play to determine if new net will be accepted.
@@ -32,29 +32,30 @@ args = dotdict({
     'load_model': True,
     'load_folder_file_1': ('Models','nnet4.pt'),
     'load_folder_file_2': ('Models','pnet4.pt'),
-    'numItersForTrainExamplesHistory': 3,
+    'numItersForTrainExamplesHistory': 5,
     'saved_model': True
 })
 
 def main():
     env = Environment(args)
-    model = GomokuNet(env)
+    nnet = GomokuNet(env)
+    pnet = GomokuNet(env)
     
     if args.load_model:
         log.info('Loading checkpoint "%s/%s"...', args.load_folder_file_1)
-        model.load_checkpoint(args.load_folder_file_1[0], args.load_folder_file_1[1])
+        nnet.load_checkpoint(args.load_folder_file_1[0], args.load_folder_file_1[1])
     else:
         log.warning('Not loading a checkpoint!')
 
     # log.info('Loading the Coach...')
-    coach = Coach(env, model, args)
+    coach = Coach(env, nnet, pnet, args)
 
     if args.load_model:
         # log.info("Loading 'trainExamples' from file...")
         coach.loadTrainExamples()
 
     # log.info('Starting the learning process !')
-    for i in range(0, args.numIters):
+    for i in range(1, args.numIters):
         # bookkeeping
         print(f'Starting Iter #{i} ...')
         coach.learn(i)

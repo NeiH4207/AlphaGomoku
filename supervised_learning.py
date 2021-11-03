@@ -3,7 +3,7 @@ from copy import deepcopy
 from src.environment import Environment
 
 from src.utils import dotdict
-from src.GomokuNet_ver2 import GomokuNet
+from src.GomokuNet import GomokuNet
 from src.machine import Machine
 from src.evaluate import Evaluation
 from src.MCTS import MCTS
@@ -17,9 +17,9 @@ from random import choice
 log = logging.getLogger(__name__)
 
 args = dotdict({
-    'height': 10,
-    'width': 10,
-    "n_in_rows": 3,
+    'height': 14,
+    'width': 14,
+    "n_in_rows": 5,
     'depth_minimax': 3,
     'show_screen': True,
     'num_iters': 1000,
@@ -31,10 +31,10 @@ args = dotdict({
     'numMCTSSims': 20,          
     'arenaCompare': 40,        
     'cpuct': 1,
-    'load_model': False,
+    'load_model': True,
     'saved_model': True,
-    'load_folder_file_1': ('Models','nnet2.pt'),
-    'load_folder_file_2': ('Models','pnet2.pt'),
+    'load_folder_file_1': ('Models','nnet4.pt'),
+    'load_folder_file_2': ('Models','pnet4.pt'),
     'algo': 'engine'
 })
 
@@ -73,35 +73,24 @@ def main():
             env.restart()   
             while True:
                 if player == 0:
-                    # action = machine.predict(board.get_state())
-                    # action = env.convert_action_c2i(action)
-                    # probs = [0] * env.n_actions
-                    # probs[action] = 1
-                    probs = nnet.predict(board.get_state())
-                    action = np.argmax(probs)
-                    # action = env.convert_action_c2i(action)
+                    action = machine.predict(board.get_state())
+                    action = env.convert_action_c2i(action)
                     probs = [0] * env.n_actions
                     probs[action] = 1
-                    # valids = env.get_valid_moves(board)
-                    # probs = nnet.predict(board).tolist()[0]
-                    # probs = probs * valids
-                    # x, y = env.convert_action_i2c(action)
+                    # probs = nnet.predict(board.get_state())
+                    # action = np.argmax(probs)
+                    # probs = [0] * env.n_actions
+                    # probs[action] = 1
                     sym_board, sym_prob = env.get_symmetric(board, probs)
                     act = env.convert_action_v2i(action)
                     history.append([sym_board, sym_prob, action, player])
                 else:
-                    probs = nnet.predict(board.get_state())
-                    action = np.argmax(probs)
-                    # action = env.convert_action_c2i(action)
+                    action = machine.predict(board.get_state())
+                    action = env.convert_action_c2i(action)
                     probs = [0] * env.n_actions
                     probs[action] = 1
                     # probs = nnet.predict(board.get_state())
-                    # valids = env.get_valid_moves(board)
-                    # probs = probs * valids
                     # action = np.argmax(probs)
-                    # action = machine.predict(board)
-                    # x, y = action
-                    # action = env.convert_action_c2i(action)
                     # probs = [0] * env.n_actions
                     # probs[action] = 1
                     sym_board, sym_prob = env.get_symmetric(board, probs)

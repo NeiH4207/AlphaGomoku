@@ -56,7 +56,7 @@ class Evaluation():
                 game_over, result = self.game.get_game_ended(board, action)
                 if game_over:
                     self.n_battles += 1
-                    if result == 1:
+                    if result != 0:
                         self.score[player] += 1
                         self.game.players[player].score += 1
                         if player == 0:

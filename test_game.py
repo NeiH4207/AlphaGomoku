@@ -2,7 +2,7 @@
 from src.environment import Environment
 from src.utils import dotdict, plot_elo
 from src.model import Policy
-from src.GomokuNet_ver2 import GomokuNet
+from src.GomokuNet import GomokuNet
 from src.machine import Machine
 import time
 import sys
@@ -10,13 +10,13 @@ import pygame
 import numpy as np
 
 args = dotdict({
-    'height': 10,
-    'width': 10,
-    "n_in_rows": 3,
+    'height': 14,
+    'width': 14,
+    "n_in_rows": 5,
     'show_screen': True,
     'mode': 'test-model',
     'model': 'nnet',
-    'load_folder_file': ('Models','nnet2.pt')
+    'load_folder_file': ('Models','nnet4.pt')
 })
 
 def main():
@@ -43,17 +43,15 @@ def main():
                 x, y = action
             else:
                 stop = False
-                while not stop:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            sys.exit()
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            mouseX = event.pos[1] # x
-                            mouseY = event.pos[0] # y
-                            x = int(mouseY // env.screen.SQUARE_SIZE)
-                            y = int(mouseX // env.screen.SQUARE_SIZE)
-                            stop = True
-                            break
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        sys.exit()
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        mouseX = event.pos[1] # x
+                        mouseY = event.pos[0] # y
+                        x = int(mouseY // env.screen.SQUARE_SIZE)
+                        y = int(mouseX // env.screen.SQUARE_SIZE)
+                        stop = True
                
             if env.is_valid_move(board, x, y):
                 action = (x, y) 
@@ -64,8 +62,8 @@ def main():
             game_over, result = env.get_game_ended(board, env.convert_action_c2i(action))
             if game_over:
                 env.players[player].score += 1
-                env.restart()
                 board.reset()
+                env.restart()
             player = 1 - player
     else:   
         env.play()

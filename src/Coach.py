@@ -5,7 +5,6 @@ from collections import deque
 from pickle import Pickler, Unpickler
 from src.machine import Machine
 from random import shuffle
-from src.GomokuNet_ver2 import GomokuNet
 from src.machine import Machine
 from src.evaluate import Evaluation
 import numpy as np
@@ -22,10 +21,10 @@ class Coach():
     in Game and NeuralNet. args are specified in main.py.
     """
 
-    def __init__(self, game, nnet, args):
+    def __init__(self, game, nnet, pnet, args):
         self.game = game
         self.nnet = nnet
-        self.pnet = GomokuNet(self.game)  # the competitor network
+        self.pnet = pnet  # the competitor network
         self.args = args
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
@@ -83,6 +82,7 @@ class Coach():
         """
         print('Current NNET ELO:', self.nnet.elo)
         self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
+        self.game.reset()
         # examples of the iteration
         if not self.skipFirstSelfPlay or iter > 0:
             self.iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
