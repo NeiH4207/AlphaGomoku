@@ -21,7 +21,7 @@ def main():
         'mem_size': 10000,
         'mode': 'test-machine',
         'saved_model': False ,
-        'load_folder_file_1': ('Models','nnet2.pt'),
+        'load_folder_file_1': ('Models','nnet3.pt'),
         'load_folder_file_2': ('Models','nnet3.pt')
     })
 

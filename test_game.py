@@ -2,7 +2,7 @@
 from src.environment import Environment
 from src.utils import dotdict, plot_elo
 from src.model import Policy
-from src.GomokuNet import GomokuNet
+from src.GomokuNet_ver2 import GomokuNet
 from src.machine import Machine
 import time
 import sys

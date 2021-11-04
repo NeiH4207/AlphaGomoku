@@ -27,7 +27,7 @@ args = dotdict({
     'cuda': torch.cuda.is_available(),
     'num_channels': 256,
     'optimizer': 'adas',
-    'kl_target': 0.25,
+    'kl_target': 0.2,
     'lr_multiplier': 1.0,
     'visualize': False
 })
@@ -252,7 +252,7 @@ class GomokuNet(nn.Module):
                 t.set_postfix(Loss_pi=self.pi_losses, Loss_v=self.v_losses, Entropy=entropy)
                 
                 new_pi, new_v = self.forward(boards)
-                kl = np.mean(np.sum((torch.exp(out_pi) * (out_pi - new_pi)).detach().numpy(), axis=1))
+                kl = np.mean(np.sum((torch.exp(out_pi) * (out_pi - new_pi)).detach().cpu().numpy(), axis=1))
                 
                 if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
                     print('Divergence detected, stopping training')
