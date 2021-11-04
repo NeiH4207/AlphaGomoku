@@ -124,7 +124,7 @@ class Environment(object):
         
     """ return a reward after implement action """
     def get_game_ended(self, board, action):
-        action = self.convert_action_i2c(action) 
+        action = self.convert_action_i2xy(action) 
         if self.check_game_ended(board, 1, action):
             return (True, -1)
         
@@ -214,7 +214,7 @@ class Environment(object):
             if n_in_rows == self.args.n_in_rows:
                 if not self.in_board(x1, y1, x2, y2):
                     return True
-                if board.get_state()[playerID][x1][y1] == 0 or board.get_state()[playerID][x2][y2] == 0:
+                if board.get_state()[1 - playerID][x1][y1] == 0 or board.get_state()[1 - playerID][x2][y2] == 0:
                     return True
         return False
     
@@ -231,7 +231,7 @@ class Environment(object):
         return np.argmax(action)
             
     # convert action from int to coordinate
-    def convert_action_i2c(self, action):
+    def convert_action_i2xy(self, action):
         if isinstance(action, np.int64) or isinstance(action, int) or isinstance(action, np.int32):
             return (int(action / self.width), action % self.width)
         else:
@@ -260,7 +260,7 @@ class Environment(object):
     def get_next_state(self, board, action, playerID=None, render=False):
         # convert action from int to coordinate
         if isinstance(action, np.int64) or isinstance(action, int) or isinstance(action, np.int32):
-            action = self.convert_action_i2c(action)
+            action = self.convert_action_i2xy(action)
             
         board = board.copy()
         x, y = action

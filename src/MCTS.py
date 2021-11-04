@@ -1,6 +1,7 @@
 import logging
 import math
 import numpy as np
+from src.simulate import *
 EPS = 1e-8
 log = logging.getLogger(__name__)
 
@@ -45,15 +46,36 @@ class MCTS():
             bestA = np.random.choice(bestAs)
             probs = [0] * len(counts)
             probs[bestA] = 1
-            return probs
-
-        counts = [x ** (1. / temp) for x in counts]
-        counts_sum = float(sum(counts))
-        if counts_sum == 0:
-            probs = [1 / self.game.n_actions for _ in range(self.game.n_actions)]
         else:
-            probs = [x / counts_sum for x in counts]
+            counts = [x ** (1. / temp) for x in counts]
+            counts_sum = float(sum(counts))
+            if counts_sum == 0:
+                probs = [1 / self.game.n_actions for _ in range(self.game.n_actions)]
+            else:
+                probs = [x / counts_sum for x in counts]
+        if self.args._is_selfplay:
+                # add Dirichlet Noise for exploration (needed for
+                # self-play training)
+                valids = self.game.get_valid_moves(board)
+                dirictlet_rd = valids * np.random.dirichlet(0.3 * np.ones(len(probs)))
+                # renomalize dirictlet_rd to sum to 1
+                dirictlet_rd = dirictlet_rd / np.sum(dirictlet_rd)
+                # add dirictlet noise to probs 25%
+                probs = np.array(probs) * 0.75 + dirictlet_rd * 0.25
         return probs
+    
+    def predict(self, board):
+        s = board.string_representation()
+        for _ in range(self.args.numMCTSSims):
+            self.search(board)
+
+        counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 
+                  for a in range(self.game.n_actions)]
+        # get probabilities of actions by counts
+        sum_counts = float(sum(counts))
+        probs = [x / sum_counts for x in counts]
+        return probs
+        
 
     def search(self, board, last_action = None):
         """
@@ -85,6 +107,12 @@ class MCTS():
             # leaf node
             self.Ps[s], v = self.nnet.step(board.get_state())
             self.Ps[s], v = self.Ps[s][0], v[0]
+            if np.random.uniform() < self.args.exp_rate:
+                # explore
+                probs = get_probs(board.get_state())
+                for p in probs:
+                    a = self.game.convert_action_c2i(p)
+                    self.Ps[s][a] = probs[p]
             valids = self.game.get_valid_moves(board)
             self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
             sum_Ps_s = np.sum(self.Ps[s])

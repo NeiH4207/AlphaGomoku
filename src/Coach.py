@@ -54,8 +54,8 @@ class Coach():
         
         while True:
             episodeStep += 1
-            temp = int(episodeStep < self.args.tempThreshold)
-            pi = self.mcts.getActionProb(board, temp)
+            # temp = int(episodeStep < self.args.tempThreshold)
+            pi = self.mcts.getActionProb(board, temp=1e-1)
             sym_board, sym_pi = self.game.get_symmetric(board, pi)
             trainExamples.append([sym_board.get_state(), sym_pi, player_ID])
             
@@ -112,15 +112,9 @@ class Coach():
         if len(trainExamples) < self.nnet.args.batch_size: return
         
         shuffle(trainExamples)
-        self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
-                             filename=self.args.load_folder_file_1[1])
-        
-        self.pnet.load_checkpoint(self.args.load_folder_file_1[0], 
-                                  self.args.load_folder_file_1[1])
         
         # training new network, keeping a copy of the old one
         self.nnet.train_examples(trainExamples)
-        self.game.render()
         eval = Evaluation(self.game, self.nnet, self.pnet)
 
         print('PITTING AGAINST PREVIOUS VERSION')
@@ -131,19 +125,18 @@ class Coach():
         print('PNET ELO:', self.pnet.elo)
         if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
             print('REJECTING NEW MODEL')
-            self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
-                                 filename=self.args.load_folder_file_1[1])
-            self.pnet.save_checkpoint(folder=self.args.load_folder_file_2[0], 
-                                 filename=self.args.load_folder_file_2[1])
-            # self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
-            #                      filename='rejected_' + self.args.load_folder_file_1[1])
+            self.nnet.save_checkpoint(folder=self.args.load_folder_file[0], 
+                                 filename='rejected_' + self.args.load_folder_file[1])
+            self.nnet.load_checkpoint(folder=self.args.load_folder_file[0], 
+                                 filename= self.args.load_folder_file[1])
+            self.trainExamplesHistory.pop(-1)
         else:
             print('ACCEPTING NEW MODEL')
-            self.nnet.save_checkpoint(folder=self.args.load_folder_file_1[0], 
-                                 filename=self.args.load_folder_file_1[1])
-            self.pnet.save_checkpoint(folder=self.args.load_folder_file_2[0], 
-                                 filename=self.args.load_folder_file_2[1])
-        
+            self.nnet.save_checkpoint(folder=self.args.load_folder_file[0], 
+                                      filename=self.args.load_folder_file[1])
+            
+            self.pnet.load_checkpoint(folder=self.args.load_folder_file[0], 
+                                      filename=self.args.load_folder_file[1])
     def getCheckpointFile(self):
         return 'checkpoint_' + 'pt'
 

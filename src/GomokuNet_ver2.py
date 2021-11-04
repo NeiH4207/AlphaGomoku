@@ -9,6 +9,8 @@ from torch.optim import Adam, SGD
 from collections import deque
 from tqdm import tqdm
 from src.utils import dotdict, AverageMeter, plot
+from torch.autograd import Variable
+from matplotlib import pyplot as plt
 
 EPS = 0.001
 
@@ -20,11 +22,14 @@ def fanin_init(size, fanin=None):
 args = dotdict({
     'lr': 0.001,
     'dropout': 0.3,
-    'epochs': 20,
-    'batch_size': 64,
+    'epochs': 10,
+    'batch_size': 256,
     'cuda': torch.cuda.is_available(),
-    'num_channels': 32,
+    'num_channels': 256,
     'optimizer': 'adas',
+    'kl_target': 0.25,
+    'lr_multiplier': 1.0,
+    'visualize': False
 })
 
 # 3x3 convolution
@@ -97,6 +102,8 @@ class GomokuNet(nn.Module):
         self.env = env
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self._elo = [0]
+        self.kl_targ = args.kl_target
+        self.lr_multiplier = args.lr_multiplier
 
         super(GomokuNet, self).__init__()
         self.conv1 = nn.Conv2d(self.n_inputs, args.num_channels, 3, stride=1, padding=1).to(self.device)
@@ -120,21 +127,20 @@ class GomokuNet(nn.Module):
 
 
         # self.last_channel_size = args.num_channels * (self.board_x - 4) * (self.board_y - 4)
-        self.fc1 = nn.Linear(self.last_dim, 128).to(self.device)
-        self.fc_bn1 = nn.BatchNorm1d(128).to(self.device)
+        self.fc1 = nn.Linear(self.last_dim, 256).to(self.device)
+        self.fc_bn1 = nn.BatchNorm1d(256).to(self.device)
 
-        self.fc2 = nn.Linear(128, 62).to(self.device)
-        self.fc_bn2 = nn.BatchNorm1d(62).to(self.device)
+        self.fc2 = nn.Linear(256, 128).to(self.device)
+        self.fc_bn2 = nn.BatchNorm1d(128).to(self.device)
 
-        self.fc3 = nn.Linear(self.last_dim, 128).to(self.device)
-        self.fc_bn3 = nn.BatchNorm1d(128).to(self.device)
+        self.fc3 = nn.Linear(self.last_dim, 256).to(self.device)
+        self.fc_bn3 = nn.BatchNorm1d(256).to(self.device)
 
-        self.fc4 = nn.Linear(128, 62).to(self.device)
-        self.fc_bn4 = nn.BatchNorm1d(62).to(self.device)
+        self.fc4 = nn.Linear(256, 128).to(self.device)
+        self.fc_bn4 = nn.BatchNorm1d(128).to(self.device)
 
-        self.fc5 = nn.Linear(62, self.action_size).to(self.device)
-
-        self.fc6 = nn.Linear(62, 1).to(self.device)
+        self.fc5 = nn.Linear(128, self.action_size).to(self.device)
+        self.fc6 = nn.Linear(128, 1).to(self.device)
         
         self.entropies = 0
         self.pi_losses = AverageMeter()
@@ -200,6 +206,11 @@ class GomokuNet(nn.Module):
     def reset_grad(self):
         self.optimizer.zero_grad()
 
+    def set_learning_rate(self, lr):
+        """Sets the learning rate to the given value"""
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+
     def train_examples(self, examples):
         """
         examples: list of examples, each example is of form (board, pi, v)
@@ -209,13 +220,14 @@ class GomokuNet(nn.Module):
             self.train()
             batch_count = int(len(examples) / args.batch_size)
             t = tqdm(range(batch_count), desc='Training Net')
+            self.set_learning_rate(self.lr * self.lr_multiplier)
             for _ in t:
                 sample_ids = np.random.randint(len(examples), size=args.batch_size)
                 boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
                 boards = self.env.get_states_for_step(boards)
-                boards = torch.FloatTensor(boards.astype(np.float64)).to(self.device)
-                target_pis = torch.FloatTensor(np.array(pis).astype(np.float64))
-                target_vs = torch.FloatTensor(np.array(vs).astype(np.float64))
+                boards = Variable(torch.FloatTensor(boards.astype(np.float64)).to(self.device))
+                target_pis = Variable(torch.FloatTensor(np.array(pis).astype(np.float64)))
+                target_vs = Variable(torch.FloatTensor(np.array(vs).astype(np.float64)))
 
                 # predict
                 if self.device == 'cuda':
@@ -230,14 +242,46 @@ class GomokuNet(nn.Module):
                 # record loss
                 self.pi_losses.update(l_pi.item(), boards.size(0))
                 self.v_losses.update(l_v.item(), boards.size(0))
-                t.set_postfix(Loss_pi=self.pi_losses, Loss_v=self.v_losses)
                 # compute gradient and do Adas step
                 self.reset_grad()
                 total_loss.backward()
                 self.optimize()
-               
-        # self.pi_losses.plot('PolicyLoss')
-        # self.v_losses.plot('ValueLoss')
+                entropy = -torch.mean(
+                    torch.sum(torch.exp(out_pi) * out_pi, 1)
+                ).item()
+                t.set_postfix(Loss_pi=self.pi_losses, Loss_v=self.v_losses, Entropy=entropy)
+                
+                new_pi, new_v = self.forward(boards)
+                kl = np.mean(np.sum((torch.exp(out_pi) * (out_pi - new_pi)).detach().numpy(), axis=1))
+                
+                if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
+                    print('Divergence detected, stopping training')
+                    break
+                
+        # adaptively adjust the learning rate
+        if kl > self.kl_targ * 2 and self.lr_multiplier > 0.1:
+            self.lr_multiplier /= 1.5
+            print('decreasing lr ::: ' + str(self.lr_multiplier))
+        elif kl < self.kl_targ / 2 and self.lr_multiplier < 10:
+            self.lr_multiplier *= 1.5
+            print('increasing lr ::: ' + str(self.lr_multiplier))
+            
+        if self.lr_multiplier > 10:
+            self.lr_multiplier = 10
+        elif self.lr_multiplier < 0.1:
+            self.lr_multiplier = 0.1
+        
+        if self.args.visualize:
+            # Plot Values Loss and Policy Loss
+            plt.figure(figsize=(12, 8))
+            plt.subplot(121)
+            plt.plot(self.v_losses.values())
+            plt.title('Value Loss')
+            plt.subplot(122)
+            plt.plot(self.pi_losses.values())
+            plt.title('Policy Loss')
+            plt.show()
+        
     
     @property
     def elo(self):
@@ -250,10 +294,10 @@ class GomokuNet(nn.Module):
         self._elo.append(new_elo)
     
     def loss_pi(self, targets, outputs):
-        return -torch.sum(targets * outputs) / targets.size()[0]
+        return -torch.mean(torch.sum(targets * outputs, 1))
 
     def loss_v(self, targets, outputs):
-        return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
+        return F.mse_loss(outputs.view(-1), targets)
 
     def save_checkpoint(self, folder='Models', filename='model.pt'):
         filepath = os.path.join(folder, filename)

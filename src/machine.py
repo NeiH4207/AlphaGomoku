@@ -15,11 +15,10 @@ import torch.nn.functional as F
 from sklearn.utils import shuffle
 from copy import deepcopy as dcopy
 from torch.distributions import Categorical
-from src.simulate import stupid_score, best_move
+from src.simulate import *
 import logging
 import math
 log = logging.getLogger(__name__)
-torch.manual_seed(1)
 MAP_SIZE = 5
 
 class Machine():
@@ -38,9 +37,14 @@ class Machine():
     def predict(self, board, mode = 'ai-engine'):
         assert mode in ['minimax','ai-engine']
         if mode == 'ai-engine':
-            action = best_move(board, 0)
-            # print(action)
-            return action
+            probs = get_probs(board)
+            flatten_probs = [0] * self.game.n_actions
+            for coord in probs:
+                i = self.game.convert_action_c2i(coord)
+                flatten_probs[i] = probs[coord]
+            if np.sum(flatten_probs) == 0:
+                flatten_probs[np.random.randint(0, self.game.n_actions - 1)] = 1
+            return flatten_probs
         return False
     
     def get_stupid_score(self,board):

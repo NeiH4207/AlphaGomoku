@@ -17,9 +17,9 @@ from random import choice
 log = logging.getLogger(__name__)
 
 args = dotdict({
-    'height': 14,
-    'width': 14,
-    "n_in_rows": 5,
+    'height': 6,
+    'width': 6,
+    "n_in_rows": 4,
     'depth_minimax': 3,
     'show_screen': True,
     'num_iters': 1000,
@@ -31,10 +31,10 @@ args = dotdict({
     'numMCTSSims': 20,          
     'arenaCompare': 40,        
     'cpuct': 1,
-    'load_model': True,
+    'load_model': False,
     'saved_model': True,
-    'load_folder_file_1': ('Models','nnet4.pt'),
-    'load_folder_file_2': ('Models','pnet4.pt'),
+    'load_folder_file_1': ('Models','nnet.pt'),
+    'load_folder_file_2': ('Models','pnet.pt'),
     'algo': 'engine'
 })
 
@@ -52,7 +52,8 @@ def next_step(board, player, action):
 
 def main():
     nnet = GomokuNet(env)
-    # summary(nnet, (args.height, args.width))
+    summary(nnet, (args.height, args.width))
+    
     if args.load_model:
         nnet.load_checkpoint(args.load_folder_file_1[0], args.load_folder_file_1[1])
     

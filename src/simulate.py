@@ -1,17 +1,6 @@
 from copy import deepcopy
-import turtle
 import random
-import time
-
 import numpy as np
-
-global move_history
-
-def make_empty_board(sz):
-    board = []
-    for i in range(sz):
-        board.append([" "]*sz)
-    return board
 
 def is_empty(board):
     cnt = 0
@@ -23,24 +12,6 @@ def is_empty(board):
 
 def is_in(board, y, x):
     return 0 <= y < len(board) and 0 <= x < len(board)
-
-def is_win(board):
-    
-    black = score_of_col(board,'b')
-    white = score_of_col(board,'w')
-    
-    sum_sumcol_values(black)
-    sum_sumcol_values(white)
-    
-    if 5 in black and black[5] == 1:
-        return 'Black won'
-    elif 5 in white and white[5] == 1:
-        return 'White won'
-        
-    if sum(black.values()) == black[-1] and sum(white.values()) == white[-1] or possible_moves(board)==[]:
-        return 'Draw'
-        
-    return 'Continue playing'
 
 ##AI Engine
 
@@ -173,18 +144,6 @@ def possible_moves(board):
         for j in range(len(board)):
             if board[i][j] == ' ':
                 cord[(i,j)] = False
-    #             taken.append((i,j))
-    # ''' duyệt trong hướng đi và mảng giá trị trên bàn cờ của người chơi và máy, kiểm tra nước không thể đi(trùng với 
-    # nước đã có trên bàn cờ)
-    # '''
-    # for direction in directions:
-    #     dy,dx = direction
-    #     for coord in taken:
-    #         y,x = coord
-    #         for length in [1,2,3,4]:
-    #             move = march(board,y,x,dy,dx,length)
-    #             if move not in taken and move not in cord:
-    #                 cord[move]=False
     return cord
     
 def TF34score(score3,score4):
@@ -250,181 +209,66 @@ def winning_situation(sumcol):
             return 3
     return 0
     
-def best_move(board,col):
+def best_move(board):
     '''
     trả lại điểm số của mảng trong lợi thế của từng màu
     '''
-    new_board = deepcopy(board[0].tolist())
+    cv_board = deepcopy(board[0].tolist())
     m = len(board[0])
     n = len(board[0][0])
     for i in range(m):
         for j in range(m):
-            if new_board[j][i] == 1:
-                new_board[j][i] = 'w'
-            elif board[1][j][i] == 1:
-                new_board[j][i] = 'b'
+            if cv_board[i][j] == 1:
+                cv_board[i][j] = 'w'
+            elif board[1][i][j] == 1:
+                cv_board[i][j] = 'b'
             else:
-                new_board[j][i] = ' '
-        if col == 1:
-            col = 'b'
-        else:
-            col = 'w'
-            
-    if col == 'w':
-        anticol = 'b'
-    else:
-        anticol = 'w'
+                cv_board[i][j] = ' '
+                
+    col, alticol = 'b', 'w'
     
-    movecol = (0, 0)
-    maxscorecol = ''
-    # kiểm tra nếu bàn cờ rỗng thì cho vị trí random nếu không thì đưa ra giá trị trên bàn cờ nên đi 
-    if is_empty(new_board):
-        movecol = ( int((len(new_board))*random.random()),int((len(new_board[0]))*random.random()))
-        return movecol
+    if is_empty(cv_board):
+        return (random.randint(0, m - 1), random.randint(0, n - 1))
     else:
-        moves = list(possible_moves(new_board).items())
+        moves = list(possible_moves(cv_board).items())
         scores = []
         for move in moves:
-            y,x = move[0]
-            if maxscorecol == '':
-                scores.append(stupid_score(new_board,col,anticol,y,x))
-            else:
-                scores.append(stupid_score(new_board,col,anticol,y,x))
+            y, x = move[0]
+            scores.append(stupid_score(cv_board,col,alticol,y,x))
                 
         best_moves = np.array(np.argwhere(scores == np.max(scores))).flatten()
         return moves[np.random.choice(best_moves)][0]
 
-##Graphics Engine
-
-def click(x,y):
-    global board,colors,win, move_history
-    
-    x,y = getindexposition(x,y)
-    
-    if x == -1 and y == -1 and len(move_history) != 0:
-        x, y = move_history[-1]
-     
-        del(move_history[-1])
-        board[y][x] = " "
-        x, y = move_history[-1]
-       
-        del(move_history[-1])
-        board[y][x] = " "
-        return
-    
-    if not is_in(board, y, x):
-        return
-    
-    if board[y][x] == ' ':
-        
-        draw_stone(x,y,colors['b'])
-        board[y][x]='b'
-        
-        move_history.append((x, y))
-        
-        game_res = is_win(board)
-        if game_res in ["White won", "Black won", "Draw"]:
-            print (game_res)
-            win = True
-            return
-            
-          
-            
-        ay,ax = best_move(board,'w')
-        draw_stone(ax,ay,colors['w'])
-        board[ay][ax]='w'    
-            
-        move_history.append((ax, ay))
-        
-        game_res = is_win(board)
-        if game_res in ["White won", "Black won", "Draw"]:
-            print (game_res)
-            win = True
-            return
-            
-          
-        
-    
-def initialize(size):
-    
-    global win,board,screen,colors, move_history
-    
-    move_history = []
-    win = False
-    board = make_empty_board(size)
-    
-    screen = turtle.Screen()
-    screen.onclick(click)
-    screen.setup(screen.screensize()[1]*2,screen.screensize()[1]*2)
-    screen.setworldcoordinates(-1,size,size,-1)
-    screen.bgcolor('orange')
-    screen.tracer(500)
-    
-    colors = {'w':turtle.Turtle(),'b':turtle.Turtle(), 'g':turtle.Turtle()}
-    colors['w'].color('white')
-    colors['b'].color('black')
-  
-    for key in colors:
-        colors[key].ht()
-        colors[key].penup()
-        colors[key].speed(0)
-    
-    border = turtle.Turtle()
-    border.speed(9)
-    border.penup()
-    
-    side = (size-1)/2
-    
-    i=-1
-    for start in range(size):
-        border.goto(start,side + side *i)    
-        border.pendown()
-        i*=-1
-        border.goto(start,side + side *i)     
-        border.penup()
-        
-    i=1
-    for start in range(size):
-        border.goto(side + side *i,start)
-        border.pendown()
-        i *= -1
-        border.goto(side + side *i,start)
-        border.penup()
-        
-    border.ht()
-    
-
-    
-    screen.listen()
-    screen.mainloop()
-    
-def getindexposition(x,y):
+def get_probs(board):
     '''
-    lấy index
+    trả lại điểm số của mảng trong lợi thế của từng màu
     '''
-    intx,inty = int(x),int(y)
-    dx,dy = x-intx,y-inty
-    if dx > 0.5:
-        x = intx +1
-    elif dx<-0.5:
-        x = intx -1
-    else:
-        x = intx
-    if dy > 0.5:
-        y = inty +1
-    elif dx<-0.5:
-        y = inty -1
-    else:
-        y = inty
-    return x,y
-
-def draw_stone(x,y,colturtle):
-    colturtle.goto(x,y-0.3)
-    colturtle.pendown()
-    colturtle.begin_fill()
-    colturtle.circle(0.3)
-    colturtle.end_fill()
-    colturtle.penup()
+    cv_board = deepcopy(board[0].tolist())
+    m = len(board[0])
+    n = len(board[0][0])
+    probs = {}
+    for i in range(m):
+        for j in range(m):
+            if cv_board[j][i] == 1:
+                cv_board[j][i] = 'w'
+            elif board[1][j][i] == 1:
+                cv_board[j][i] = 'b'
+            else:
+                cv_board[j][i] = ' '
+            probs[(j, i)] = 0
+    col, alticol = 'b', 'w'
     
-if __name__ == '__main__':
-    initialize(15)
+    if is_empty(cv_board):
+        return probs
+    else:
+        moves = list(possible_moves(cv_board).items())
+        scores = []
+        for move in moves:
+            y, x = move[0]
+            scores.append(stupid_score(cv_board,col,alticol,y,x))
+        sum = np.sum(scores)
+        for i in range(len(scores)):
+            move = moves[i]
+            probs[move[0]] = scores[i]/sum 
+        return probs
+

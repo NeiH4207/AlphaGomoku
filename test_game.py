@@ -10,13 +10,13 @@ import pygame
 import numpy as np
 
 args = dotdict({
-    'height': 14,
-    'width': 14,
-    "n_in_rows": 5,
+    'height': 6,
+    'width': 6,
+    "n_in_rows": 4,
     'show_screen': True,
     'mode': 'test-model',
     'model': 'nnet',
-    'load_folder_file': ('Models','nnet4.pt')
+    'load_folder_file': ('Models','nnet3.pt')
 })
 
 def main():
@@ -26,20 +26,21 @@ def main():
         if args.model == 'nnet':
             machine = GomokuNet(env)
             machine.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
-            # plot_elo(machine._elo)
+            plot_elo(machine._elo)
         elif args.model == 'ai-engine':
-            machine = Machine(env)
+            machine = Machine(env, nnet=None)
             
         game_over = False
         player = 1
         board = env.get_new_board()
+        
         while True:
             # Get action from player
             if player == 1:
                 probs = machine.predict(board.get_state())
                 valids = env.get_valid_moves(board)
                 probs = probs * valids
-                action = env.convert_action_i2c(np.argmax(probs))
+                action = env.convert_action_i2xy(np.argmax(probs))
                 x, y = action
             else:
                 stop = False
