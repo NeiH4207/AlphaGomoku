@@ -27,7 +27,7 @@ args = dotdict({
     'cuda': torch.cuda.is_available(),
     'num_channels': 256,
     'optimizer': 'adas',
-    'kl_target': 0.2,
+    'kl_target': 0.1,
     'lr_multiplier': 1.0,
     'visualize': False
 })
@@ -106,16 +106,16 @@ class GomokuNet(nn.Module):
         self.lr_multiplier = args.lr_multiplier
 
         super(GomokuNet, self).__init__()
-        self.conv1 = nn.Conv2d(self.n_inputs, args.num_channels, 3, stride=1, padding=1).to(self.device)
-        self.conv2 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1, padding=1).to(self.device)
-        self.conv3 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1).to(self.device)
-        self.conv4 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1).to(self.device)
+        self.conv1 = nn.Conv2d(self.n_inputs, 32, 3, stride=1, padding=1).to(self.device)
+        self.conv2 = nn.Conv2d(32, 64, 3, stride=1, padding=1).to(self.device)
+        self.conv3 = nn.Conv2d(64, 128, 3, stride=1, padding=1).to(self.device)
+        self.conv4 = nn.Conv2d(128, args.num_channels, 3, stride=1, padding=1).to(self.device)
         self.conv5 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1, padding=1).to(self.device)
         self.conv6 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1,padding=1).to(self.device)
         
-        self.bn1 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn2 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn3 = nn.BatchNorm2d(args.num_channels).to(self.device)
+        self.bn1 = nn.BatchNorm2d(32).to(self.device)
+        self.bn2 = nn.BatchNorm2d(64).to(self.device)
+        self.bn3 = nn.BatchNorm2d(128).to(self.device)
         self.bn4 = nn.BatchNorm2d(args.num_channels).to(self.device)
         self.bn5 = nn.BatchNorm2d(args.num_channels).to(self.device)
         self.bn6 = nn.BatchNorm2d(args.num_channels).to(self.device)
@@ -161,8 +161,8 @@ class GomokuNet(nn.Module):
         s = s.view(-1, self.n_inputs, self.board_x, self.board_y)    # batch_size x n_inputs x board_x x board_y
         s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
         s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
-        # s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
-        # s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
+        s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
+        s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
         s = F.relu(self.resnet(s))
         pi = F.relu(self.bn5(self.conv5(s))) 
         pi = pi.view(-1, self.last_dim)

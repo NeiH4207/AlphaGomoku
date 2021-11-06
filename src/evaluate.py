@@ -41,11 +41,15 @@ class Evaluation():
                 if player == 0:
                     probs = self.nnet.predict(board.get_state())[0]
                     probs = probs * valids
-                    action = np.argmax(probs)
+                    sum_probs = np.sum(probs)
+                    probs = probs / sum_probs
+                    action = np.random.choice(range(self.game.n_actions), p=probs)
                 else:
                     probs = self.pnet.predict(board.get_state())[0]
                     probs = probs * valids
-                    action = np.argmax(probs)
+                    sum_probs = np.sum(probs)
+                    probs = probs / sum_probs
+                    action = np.random.choice(range(self.game.n_actions), p=probs)
                     
                 board = self.game.get_next_state(
                     board=board, 

@@ -34,6 +34,7 @@ class Screen():
 
     def render(self):
         pygame.display.update()
+        pygame.event.pump()
 
     def load_image(self):
         self.agent_A_img = pygame.transform.scale(

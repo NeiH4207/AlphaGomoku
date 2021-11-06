@@ -1,8 +1,8 @@
 
 from src.environment import Environment
 from src.utils import dotdict, plot_elo
-from src.model import Policy
-from src.GomokuNet_ver2 import GomokuNet
+from src.GomokuNet import GomokuNet as GNet1
+from src.GomokuNet_ver2 import GomokuNet as GNet2
 from src.machine import Machine
 import time
 import sys
@@ -16,7 +16,7 @@ args = dotdict({
     'show_screen': True,
     'mode': 'test-model',
     'model': 'nnet',
-    'load_folder_file': ('Models','nnet3.pt')
+    'load_folder_file': ('Models','nnet5.pt')
 })
 
 def main():
@@ -24,9 +24,9 @@ def main():
     env = Environment(args)
     if args.mode == 'test-model':
         if args.model == 'nnet':
-            machine = GomokuNet(env)
+            machine = GNet1(env)
             machine.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
-            plot_elo(machine._elo)
+            # plot_elo(machine._elo)
         elif args.model == 'ai-engine':
             machine = Machine(env, nnet=None)
             

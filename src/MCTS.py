@@ -2,6 +2,7 @@ import logging
 import math
 import numpy as np
 from src.simulate import *
+from scipy.special import softmax
 EPS = 1e-8
 log = logging.getLogger(__name__)
 
@@ -41,12 +42,15 @@ class MCTS():
 
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 
                   for a in range(self.game.n_actions)]
+        # print([(a, self.Qsa[(s, a)]) for a in range(self.game.n_actions) if (s, a) in self.Qsa])
+        # print([(a, self.Nsa[(s, a)]) for a in range(self.game.n_actions) if (s, a) in self.Nsa])
         if temp == 0:
             bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
             bestA = np.random.choice(bestAs)
             probs = [0] * len(counts)
             probs[bestA] = 1
         else:
+            # probs = softmax(1.0/temp * np.log(np.array(counts) + 1e-10))
             counts = [x ** (1. / temp) for x in counts]
             counts_sum = float(sum(counts))
             if counts_sum == 0:
@@ -60,8 +64,8 @@ class MCTS():
                 dirictlet_rd = valids * np.random.dirichlet(0.3 * np.ones(len(probs)))
                 # renomalize dirictlet_rd to sum to 1
                 dirictlet_rd = dirictlet_rd / np.sum(dirictlet_rd)
-                # add dirictlet noise to probs 25%
-                probs = np.array(probs) * 0.75 + dirictlet_rd * 0.25
+                # add dirictlet noise to probs
+                probs = np.array(probs) * (1 - self.args.exploration_rate) + dirictlet_rd * self.args.exploration_rate
         return probs
     
     def predict(self, board):
@@ -77,7 +81,7 @@ class MCTS():
         return probs
         
 
-    def search(self, board, last_action = None):
+    def search(self, board, last_action = None, depth = 0):
         """
         This function performs one iteration of MCTS. It is recursively called
         till a leaf node is found. The action chosen at each node is one that
@@ -148,10 +152,11 @@ class MCTS():
 
         a = best_act
         next_s = self.game.get_next_state(board, a)
-        v = self.search(next_s, a)
+        v = self.search(next_s, a, depth + 1)
         
         if (s, a) in self.Qsa:
-            self.Qsa[(s, a)] = (self.Nsa[(s, a)] * self.Qsa[(s, a)] + v) / (self.Nsa[(s, a)] + 1)
+            self.Qsa[(s, a)] = (self.Nsa[(s, a)] * self.Qsa[(s, a)] + v) \
+                / (self.Nsa[(s, a)] + 1)
             self.Nsa[(s, a)] += 1
         else:
             self.Qsa[(s, a)] = v

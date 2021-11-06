@@ -67,12 +67,16 @@ class Board(object):
         return dcopy(self)
     
     def root90(self, k = 0):
-        self.board[0] = np.rot90(self.board[0], k)
-        self.board[1] = np.rot90(self.board[1], k)
+        state = dcopy(self)
+        state.board[0] = np.rot90(state.board[0], k)
+        state.board[1] = np.rot90(self.board[1], k)
+        return state
     
     def fliplr(self):
-        self.board[0] = self.board[0][:, ::-1]
-        self.board[1] = self.board[1][:, ::-1]
+        state = dcopy(self)
+        state.board[0] = state.board[0][:, ::-1]
+        state.board[1] = self.board[1][:, ::-1]
+        return state
     
     def log(self, flip = False, icon = ('X', 'O')):
         if flip:
@@ -147,18 +151,19 @@ class Environment(object):
         return [self.height, self.width]
     
     def get_symmetric(self, board, pi):
-        sym_board = board.copy()
-        sym_pi = np.array(pi).reshape(self.height, self.width)
-        if np.random.choice([True, False]):
-            k =  np.random.randint(4)
-            sym_board.root90(k)
-            sym_pi = np.rot90(sym_pi, k)
-            
-        if np.random.choice([True, False]):
-            sym_board.fliplr()
-            sym_pi = np.fliplr(sym_pi)
-        sym_pi = flatten(sym_pi)
-        return sym_board, sym_pi
+        sym_boards = []
+        sym_pis = []
+        pi = np.array(pi).reshape(self.height, self.width)
+        for k in [1, 2, 3, 4]:
+            if np.random.choice([True, False]): continue
+            b = board.root90(k)
+            p = np.rot90(pi, k)
+            sym_boards.append(b)
+            sym_pis.append(flatten(p))
+            if np.random.choice([True, False]): continue
+            sym_boards.append(b.copy().fliplr())
+            sym_pis.append(flatten(np.fliplr(p)))
+        return sym_boards, sym_pis
     
     def get_states_for_step(self, states):
         states = np.array(states, dtype = np.float32)\

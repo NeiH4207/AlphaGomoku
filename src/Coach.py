@@ -50,27 +50,28 @@ class Coach():
         self.game.restart()
         board = self.game.get_new_board()
         episodeStep = 0
-        player_ID = 0
+        player = 0
         
         while True:
             episodeStep += 1
-            # temp = int(episodeStep < self.args.tempThreshold)
-            pi = self.mcts.getActionProb(board, temp=1e-1)
-            sym_board, sym_pi = self.game.get_symmetric(board, pi)
-            trainExamples.append([sym_board.get_state(), sym_pi, player_ID])
+            temp = int(episodeStep < self.args.tempThreshold)
+            pi = self.mcts.getActionProb(board, temp)
+            sym_boards, sym_pis = self.game.get_symmetric(board, pi)
+            for sym_board, sym_pi in zip(sym_boards, sym_pis):
+                trainExamples.append([sym_board.get_state(), sym_pi, player])
             
             action = np.random.choice(len(pi), p=pi)
-            board = self.game.get_next_state(board, action, player_ID, render=self.args.show_screen)
+            board = self.game.get_next_state(board, action, player, render=self.args.show_screen)
             terminate, r = self.game.get_game_ended(board, action)
             if terminate:
                 if r != 0:
-                    self.game.players[player_ID].score += 1
+                    self.game.players[player].score += 1
                 
-                self.iterationTrainExamples += [(x[0], x[1], r * ((-1) ** (x[2] == player_ID))) 
+                self.iterationTrainExamples += [(x[0], x[1], r * ((-1) ** (x[2] == player))) 
                                                 for x in trainExamples]
                 break
             
-            player_ID = 1 - player_ID
+            player = 1 - player
 
     def learn(self, iter):
         """

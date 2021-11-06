@@ -17,9 +17,9 @@ from random import choice
 log = logging.getLogger(__name__)
 
 args = dotdict({
-    'height': 6,
-    'width': 6,
-    "n_in_rows": 4,
+    'height': 9,
+    'width': 9,
+    "n_in_rows": 5,
     'depth_minimax': 3,
     'show_screen': True,
     'num_iters': 1000,
@@ -52,7 +52,7 @@ def next_step(board, player, action):
 
 def main():
     nnet = GomokuNet(env)
-    summary(nnet, (args.height, args.width))
+    # summary(nnet, (args.height, args.width))
     
     if args.load_model:
         nnet.load_checkpoint(args.load_folder_file_1[0], args.load_folder_file_1[1])
@@ -74,29 +74,31 @@ def main():
             env.restart()   
             while True:
                 if player == 0:
-                    action = machine.predict(board.get_state())
-                    action = env.convert_action_c2i(action)
+                    probs = machine.predict(board.get_state())
+                    action = np.argmax(probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
                     # probs = nnet.predict(board.get_state())
                     # action = np.argmax(probs)
                     # probs = [0] * env.n_actions
                     # probs[action] = 1
-                    sym_board, sym_prob = env.get_symmetric(board, probs)
+            
                     act = env.convert_action_v2i(action)
-                    history.append([sym_board, sym_prob, action, player])
+                    sym_boards, sym_pis = env.get_symmetric(board, probs)
+                    for sym_board, sym_pi in zip(sym_boards, sym_pis):
+                        history.append([sym_board, sym_pi, action, player])
                 else:
-                    action = machine.predict(board.get_state())
-                    action = env.convert_action_c2i(action)
+                    probs = machine.predict(board.get_state())
+                    action = np.argmax(probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
                     # probs = nnet.predict(board.get_state())
                     # action = np.argmax(probs)
                     # probs = [0] * env.n_actions
                     # probs[action] = 1
-                    sym_board, sym_prob = env.get_symmetric(board, probs)
-                    sym_act = env.convert_action_v2i(sym_prob)
-                    history.append([sym_board, sym_prob, sym_act, player])
+                    sym_boards, sym_pis = env.get_symmetric(board, probs)
+                    for sym_board, sym_pi in zip(sym_boards, sym_pis):
+                        history.append([sym_board, sym_pi, action, player])
                     
                 board = env.get_next_state(board, action, player, render=args.show_screen)
                 # env.log_state(board, ('X', 'O') if player == 0 else ('O', 'X'))
