@@ -22,10 +22,13 @@ log = logging.getLogger(__name__)
 MAP_SIZE = 5
 
 class Machine():
-    def __init__(self, game, nnet):
+    def __init__(self, game, machine):
         self.game = game
-        self.nnet = nnet
-            
+        self.machine = machine
+    
+    def reset(self):
+        pass
+        
     def convert_one_hot(self, action):
         n_values = self.action_dim
         return np.eye(n_values, dtype = np.float32)[action]
@@ -34,21 +37,29 @@ class Machine():
         return torch.zeros(len(next_pred_action), 
                            self.action_dim).scatter_(1, next_pred_action.unsqueeze(1), 1.)
     
-    def predict(self, board, mode = 'ai-engine'):
+    def predict(self, board, mode = 'ai-engine', best = True):
         assert mode in ['minimax','ai-engine']
         if mode == 'ai-engine':
-            probs = get_probs(board)
+            probs = get_probs(board.get_state())
             flatten_probs = [0] * self.game.n_actions
-            for coord in probs:
-                i = self.game.convert_action_c2i(coord)
-                flatten_probs[i] = probs[coord]
+            if best:
+                action, score = max(probs.items(), key = lambda k : k[1])
+                if score == 0:
+                    action = randint(0, self.game.n_actions - 1)
+                else:
+                    action = self.game.convert_action_c2i(action)
+                flatten_probs[action] = 1
+            else:
+                for coord in probs:
+                    i = self.game.convert_action_c2i(coord)
+                    flatten_probs[i] = probs[coord]
             if np.sum(flatten_probs) == 0:
                 flatten_probs[np.random.randint(0, self.game.n_actions - 1)] = 1
             return flatten_probs
         return False
     
     def get_stupid_score(self,board):
-        value = self.nnet.get_value(board)
+        value = self.machine.get_value(board)
         return value
     
     def minimax(self, board, depth, alpha = -math.inf, beta = math.inf, maximizingPlayer = True, last_action = None):

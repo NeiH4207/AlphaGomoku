@@ -23,7 +23,15 @@ class MCTS():
 
         self.Es   = {}  # stores game.get_game_ended ended for board s
         self.Vs   = {}  # stores game.getValidMoves for board s
-        
+
+    def reset(self):
+        self.Qsa = {}
+        self.Nsa = {}
+        self.Ns = {}
+        self.Ps = {}
+        self.Es = {}
+        self.Vs = {}
+
     def predict(self, board, temp=1):
         return self.getActionProb(board, temp)
         
@@ -111,12 +119,12 @@ class MCTS():
             # leaf node
             self.Ps[s], v = self.nnet.step(board.get_state())
             self.Ps[s], v = self.Ps[s][0], v[0]
-            if np.random.uniform() < self.args.exp_rate:
-                # explore
-                probs = get_probs(board.get_state())
-                for p in probs:
-                    a = self.game.convert_action_c2i(p)
-                    self.Ps[s][a] = probs[p]
+            # if np.random.uniform() < self.args.exp_rate:
+            #     # explore
+            #     probs = get_probs(board.get_state())
+            #     for p in probs:
+            #         a = self.game.convert_action_c2i(p)
+            #         self.Ps[s][a] = probs[p]
             valids = self.game.get_valid_moves(board)
             self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
             sum_Ps_s = np.sum(self.Ps[s])

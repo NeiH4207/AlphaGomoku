@@ -5,7 +5,6 @@ from collections import deque
 from pickle import Pickler, Unpickler
 from src.machine import Machine
 from random import shuffle
-from src.machine import Machine
 from src.evaluate import Evaluation
 import numpy as np
 from tqdm import tqdm
@@ -29,6 +28,7 @@ class Coach():
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
         self.scores = AverageMeter2()
+        self.machine = Machine(self.game, self.nnet)
         
     def executeEpisode(self):
         """

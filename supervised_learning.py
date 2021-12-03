@@ -17,25 +17,27 @@ from random import choice
 log = logging.getLogger(__name__)
 
 args = dotdict({
-    'height': 9,
-    'width': 9,
-    "n_in_rows": 5,
+    'height': 6,
+    'width': 6,
+    "n_in_rows": 4,
     'depth_minimax': 3,
     'show_screen': True,
+    'exploration_rate': 0.04,    # exploration rate for self-play
+    '_is_selfplay': True,       # if true, then self-play, else, then test
     'num_iters': 1000,
     'num_epochs': 30,
-    'nCompare': 30,
-    'updateThreshold': 0.51,
+    'nCompare': 100,
+    'updateThreshold': 0.4,
     'mem_size': 20000,
     'mode': 'test-machine',
-    'numMCTSSims': 20,          
+    'numMCTSSims': 160,          
     'arenaCompare': 40,        
     'cpuct': 1,
     'load_model': False,
     'saved_model': True,
-    'load_folder_file_1': ('Models','nnet.pt'),
-    'load_folder_file_2': ('Models','pnet.pt'),
-    'algo': 'engine'
+    'load_folder_file_1': ('Models','nnet6x6.pt'),
+    'load_folder_file_2': ('Models','pnet6x6.pt'),
+    'algo': 'mcts'
 })
 
 env = Environment(args)
@@ -67,6 +69,7 @@ def main():
     for iter in range(args.num_iters):
         # -------
         trainExamples = deque([], maxlen=args.mem_size)
+        machine.reset()
         for _ in tqdm(range(args.num_epochs), desc="Self Play"):
             history = []
             board = env.get_new_board()
@@ -74,8 +77,10 @@ def main():
             env.restart()   
             while True:
                 if player == 0:
-                    probs = machine.predict(board.get_state())
-                    action = np.argmax(probs)
+                    probs = machine.predict(board)
+                    # action = np.argmax(probs)
+                    # probs = machine.predict(board)
+                    action = np.random.choice(len(probs), p=probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
                     # probs = nnet.predict(board.get_state())
@@ -88,11 +93,13 @@ def main():
                     for sym_board, sym_pi in zip(sym_boards, sym_pis):
                         history.append([sym_board, sym_pi, action, player])
                 else:
-                    probs = machine.predict(board.get_state())
-                    action = np.argmax(probs)
+                    probs = machine.predict(board)
+                    
+                    # probs = machine.predict(board)
+                    action = np.random.choice(len(probs), p=probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
-                    # probs = nnet.predict(board.get_state())
+                    # probs = nnet.predict(board)
                     # action = np.argmax(probs)
                     # probs = [0] * env.n_actions
                     # probs[action] = 1
@@ -110,17 +117,6 @@ def main():
                             _board, pi, act, v = x[0], x[1], x[2], 1
                         else:
                             _board, pi, act, v = x[0], x[1], x[2], -1
-                            if return_value != 0:
-                                valids = env.get_valid_moves(_board)
-                                n_valids = sum(valids) - 1
-                                if n_valids == 0: continue
-                                p = pi[act]
-                                p /= n_valids
-                                for i in range(env.n_actions):
-                                    if valids[i] == 0:
-                                        pi[i] = 0
-                                    else:
-                                        pi[i] = pi[i] + p
                         if return_value == 0:
                             v = 0
                         trainExamples.append([_board.get_state(), pi, v]) 
@@ -159,12 +155,8 @@ def main():
             print('NNET ELO:', nnet.elo)
             print('PNET ELO:', pnet.elo)
             nnet.save_checkpoint(folder=args.load_folder_file_1[0], 
-                                 filename=args.load_folder_file_1[1])
-            pnet.save_checkpoint(folder=args.load_folder_file_2[0], 
-                                 filename=args.load_folder_file_2[1])
-            # nnet.save_checkpoint(folder=args.load_folder_file_1[0], 
-            #                      filename='rejected_' + args.load_folder_file_1[1])
-            nnet = pnet
+                                 filename='rejected_' + args.load_folder_file_1[1])
+            nnet.load_checkpoint(args.load_folder_file_1[0], args.load_folder_file_1[1])
         else:
             print('ACCEPTING NEW MODEL')
             print('NNET ELO:', nnet.elo)

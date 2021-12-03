@@ -155,12 +155,10 @@ class Environment(object):
         sym_pis = []
         pi = np.array(pi).reshape(self.height, self.width)
         for k in [1, 2, 3, 4]:
-            if np.random.choice([True, False]): continue
             b = board.root90(k)
             p = np.rot90(pi, k)
             sym_boards.append(b)
             sym_pis.append(flatten(p))
-            if np.random.choice([True, False]): continue
             sym_boards.append(b.copy().fliplr())
             sym_pis.append(flatten(np.fliplr(p)))
         return sym_boards, sym_pis
