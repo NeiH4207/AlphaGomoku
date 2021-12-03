@@ -21,13 +21,13 @@ def fanin_init(size, fanin=None):
 
 args = dotdict({
     'lr': 0.001,
-    'dropout': 0.3,
+    'dropout': 0.0,
     'epochs': 10,
-    'batch_size': 256,
+    'batch_size': 64,
     'cuda': torch.cuda.is_available(),
-    'num_channels': 256,
+    'num_channels': 64,
     'optimizer': 'adas',
-    'kl_target': 0.2,
+    'kl_target': 0.5,
     'lr_multiplier': 1.0,
     'visualize': False
 })
@@ -37,60 +37,6 @@ def conv3x3(in_channels, out_channels, stride=1):
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, 
                      stride=stride, padding=1, bias=False)
 
-# Residual block
-class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = conv3x3(in_channels, out_channels, stride)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(out_channels, out_channels)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.downsample = downsample
-        
-    def forward(self, x):
-        residual = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        if self.downsample:
-            residual = self.downsample(x)
-        out += residual
-        out = self.relu(out)
-        return out
-    
-# ResNet
-class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=10):
-        super(ResNet, self).__init__()
-        self.in_channels = args.num_channels
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.layer1 = self.make_layer(block, args.num_channels, layers[0])
-        self.layer2 = self.make_layer(block, args.num_channels, layers[1], 2)
-        self.layer3 = self.make_layer(block, args.num_channels, layers[2], 2)
-        self.avg_pool = nn.AvgPool2d(2)
-        
-    def make_layer(self, block, out_channels, blocks, stride=1):
-        downsample = None
-        if (stride != 1) or (self.in_channels != out_channels):
-            downsample = nn.Sequential(
-                conv3x3(self.in_channels, out_channels, stride=stride).to(self.device),
-                nn.BatchNorm2d(out_channels))
-        layers = []
-        layers.append(block(self.in_channels, out_channels, stride, downsample))
-        self.in_channels = out_channels
-        for i in range(1, blocks):
-            layers.append(block(out_channels, out_channels))
-        return nn.Sequential(*layers)
-    
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        return out
-    
 class GomokuNet(nn.Module):
     def __init__(self, env):
         # game params
@@ -106,41 +52,30 @@ class GomokuNet(nn.Module):
         self.lr_multiplier = args.lr_multiplier
 
         super(GomokuNet, self).__init__()
-        self.conv1 = nn.Conv2d(self.n_inputs, args.num_channels, 3, stride=1, padding=1).to(self.device)
-        self.conv2 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1, padding=1).to(self.device)
-        self.conv3 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1).to(self.device)
-        self.conv4 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1).to(self.device)
-        self.conv5 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1, padding=1).to(self.device)
-        self.conv6 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1,padding=1).to(self.device)
+        self.conv1 = nn.Conv2d(self.n_inputs, 32, 3, stride=1, padding=1).to(self.device)
+        self.conv2 = nn.Conv2d(32, 64, 3, stride=1, padding=1).to(self.device)
         
-        self.bn1 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn2 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn3 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn4 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn5 = nn.BatchNorm2d(args.num_channels).to(self.device)
-        self.bn6 = nn.BatchNorm2d(args.num_channels).to(self.device)
+        self.bn1 = nn.BatchNorm2d(32).to(self.device)
+        self.bn2 = nn.BatchNorm2d(self.args.num_channels).to(self.device)
         
-        self.resnet = ResNet(ResidualBlock, [2, 2, 2]).to(self.device)  
-        
-        self.last_dim = int(args.num_channels) * ((((self.board_x + 1) >> 1) + 1) >> 1) \
-            * ((((self.board_y + 1) >> 1) + 1) >> 1)
+        self.last_dim = int(args.num_channels) * self.board_x * self.board_y
 
 
         # self.last_channel_size = args.num_channels * (self.board_x - 4) * (self.board_y - 4)
         self.fc1 = nn.Linear(self.last_dim, 256).to(self.device)
         self.fc_bn1 = nn.BatchNorm1d(256).to(self.device)
 
-        self.fc2 = nn.Linear(256, 128).to(self.device)
-        self.fc_bn2 = nn.BatchNorm1d(128).to(self.device)
-
+        self.fc2 = nn.Linear(256, 64).to(self.device)
+        self.fc_bn2 = nn.BatchNorm1d(64).to(self.device)
+        
         self.fc3 = nn.Linear(self.last_dim, 256).to(self.device)
         self.fc_bn3 = nn.BatchNorm1d(256).to(self.device)
 
-        self.fc4 = nn.Linear(256, 128).to(self.device)
-        self.fc_bn4 = nn.BatchNorm1d(128).to(self.device)
+        self.fc4 = nn.Linear(256, 64).to(self.device)
+        self.fc_bn4 = nn.BatchNorm1d(64).to(self.device)
 
-        self.fc5 = nn.Linear(128, self.action_size).to(self.device)
-        self.fc6 = nn.Linear(128, 1).to(self.device)
+        self.fc5 = nn.Linear(64, self.action_size).to(self.device)
+        self.fc6 = nn.Linear(64, 1).to(self.device)
         
         self.entropies = 0
         self.pi_losses = AverageMeter()
@@ -160,16 +95,11 @@ class GomokuNet(nn.Module):
         #                                                           s: batch_size x n_inputs x board_x x board_y
         s = s.view(-1, self.n_inputs, self.board_x, self.board_y)    # batch_size x n_inputs x board_x x board_y
         s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
-        s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
-        # s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
-        # s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
-        s = F.relu(self.resnet(s))
-        # pi = F.relu(self.bn5(self.conv5(s))) 
+        s = F.relu(self.bn2(self.conv2(s)))         
         pi = s.view(-1, self.last_dim)
         pi = F.dropout(F.relu(self.fc1(pi)), p=args.dropout, training=self.training)  # batch_size x 1024
         pi = F.relu(self.fc2(pi))  # batch_size x 512
         
-        # v = F.relu(self.bn6(self.conv6(s))) 
         v = s.view(-1, self.last_dim)
         v = F.dropout((F.relu(self.fc3(v))), p=args.dropout, training=self.training)  # batch_size x 1024
         v = F.relu(self.fc4(v)) # batch_size x 512

@@ -19,6 +19,7 @@ args = dotdict({
     'height':  5,
     'width': 5,
     'show_screen': True, 
+    'speed': 0.1,
     'n_in_rows': 4, 
     'exploration_rate': 0.1,    # exploration rate for self-play
     'exp_rate': 0.2,            # experimental rate
@@ -29,10 +30,10 @@ args = dotdict({
     'tempThreshold': 10,        # 
     'updateThreshold': 0.5,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
     'maxlenOfQueue': 10000,     # Number of game examples to train the neural networks.
-    'numMCTSSims': 100,          # Number of games moves for MCTS to simulate.
+    'numMCTSSims': 200,          # Number of games moves for MCTS to simulate.
     'cpuct': 5,                 # a heuristic value used to balance exploration and exploitation.
     'checkpoint': './temp/',    # Directory to save the checkpoints.
-    'load_model': False,         # Whether to load the pre-trained model.
+    'load_model': True,         # Whether to load the pre-trained model.
     'load_folder_file': ('Models','nnet5x5.pt'), # (folder,file) to load the pre-trained model from.
     'numItersForTrainExamplesHistory': 5,
     'saved_model': True         # Whether to save the model.

@@ -22,12 +22,12 @@ def fanin_init(size, fanin=None):
 args = dotdict({
     'lr': 0.001,
     'dropout': 0.7,
-    'epochs': 10,
+    'epochs': 20,
     'batch_size': 128,
     'cuda': torch.cuda.is_available(),
     'num_channels': 256,
     'optimizer': 'adas',
-    'kl_target': 0.5,
+    'kl_target': 0.2,
     'lr_multiplier': 1.0,
     'visualize': False
 })

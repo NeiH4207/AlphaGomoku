@@ -5,6 +5,7 @@ from src.elo_helper import compute_elo
 from tqdm import tqdm
 import numpy as np
 log = logging.getLogger(__name__)
+import time
 
 class Evaluation():
     
@@ -77,6 +78,7 @@ class Evaluation():
                     self.pnet.update_elo(r1)
                 self.game.render
                 player = 1 - player
+                time.sleep(self.game.args.speed)
                 
     
         
