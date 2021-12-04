@@ -90,9 +90,6 @@ class Coach():
 
             for _ in tqdm(range(self.args.numEps), desc="Self Play"):
                 self.executeEpisode()
-                
-            if self.args.visualize:
-                self.scores.plot()
 
             # save the iteration examples to the history 
             self.trainExamplesHistory.append(self.iterationTrainExamples)
