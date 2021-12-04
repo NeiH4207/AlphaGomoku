@@ -21,7 +21,7 @@ def fanin_init(size, fanin=None):
 
 args = dotdict({
     'lr': 0.001,
-    'dropout': 0.0,
+    'dropout': 0.7,
     'epochs': 20,
     'batch_size': 128,
     'cuda': torch.cuda.is_available(),
