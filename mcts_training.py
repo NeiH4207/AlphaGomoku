@@ -21,7 +21,7 @@ def parse_args():
                         help='height of the board')
     parser.add_argument('--width', type=int, default=5, 
                         help='width of the board')
-    parser.add_argument('--show_screen', type=bool, default=True, 
+    parser.add_argument('--show_screen', type=bool, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
