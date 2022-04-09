@@ -20,9 +20,9 @@ def parse_args():
                         help='nnet or ai-engine')
     parser.add_argument('--mode', type=str, default='test-model',
                         help='test-model or test-selfplay')
-    parser.add_argument('--height', type=int, default=5, 
+    parser.add_argument('--height', type=int, default=6, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=5, 
+    parser.add_argument('--width', type=int, default=6, 
                         help='width of the board')
     parser.add_argument('--show_screen', type=bool, default=True, 
                         help='show the screen')

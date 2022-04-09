@@ -42,9 +42,9 @@ class Evaluation():
             while not game_over:
                 valids = self.game.get_valid_moves(board)
                 if playerID == 0:
-                    action = self.players[0].get_action(board.get_state(), validMoves=valids, getBestMove=True)
+                    action = self.players[0].get_action(board.get_state(), validMoves=valids, getBestMove=False)
                 else:
-                    action = self.players[1].get_action(board.get_state(), validMoves=valids, getBestMove=True)
+                    action = self.players[1].get_action(board.get_state(), validMoves=valids, getBestMove=False)
                     
                 board = self.game.get_next_state(
                     board=board, 
@@ -64,6 +64,7 @@ class Evaluation():
                             w = 0
                     else:
                         w = 0.5
+                        self.n_draws += 1
                     # recompute elo
                     r0, r1 = compute_elo(self.players[0].get_elo(), self.players[1].get_elo(), w)
                     self.players[0].set_elo(r0)
