@@ -13,7 +13,7 @@
         "conv3-num-filter": 256,
         "conv3-kernel-size": 3,
         "conv3-stride": 1,
-        "conv3-padding": 1,
+        "conv3-padding": 0,
         
         "conv4-num-filter": 256,
         "conv4-kernel-size": 3,

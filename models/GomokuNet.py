@@ -98,8 +98,8 @@ class GomokuNet(NNet):
         
         self.resnet = ResNet(ResidualBlock, [2, 2, 2]).to(self.device)  
         
-        self.last_dim = config['conv4-num-filter'] * ((((((self.board_x + 1) >> 1) + 1) >> 1) + 1) >> 1) * \
-                        ((((((self.board_y + 1) >> 1) + 1) >> 1) + 1) >> 1)
+        self.last_dim = config['conv4-num-filter'] * ((((self.board_x - 2 + 1) >> 1) + 1) >> 1) * \
+                        ((((self.board_y - 2 + 1) >> 1) + 1) >> 1)
         self.flatten_dim = self.last_dim 
 
         # self.last_channel_size = config.num_channels * (self.board_x - 4) * (self.board_y - 4)

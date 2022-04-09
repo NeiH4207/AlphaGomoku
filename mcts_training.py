@@ -17,15 +17,15 @@ def parse_args():
                         help='train or test')
     parser.add_argument('--visualize', type=bool, default=False, 
                         help='visualize the game')
-    parser.add_argument('--height', type=int, default=3, 
+    parser.add_argument('--height', type=int, default=5, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=3, 
+    parser.add_argument('--width', type=int, default=5, 
                         help='width of the board')
     parser.add_argument('--show_screen', type=bool, default=True, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=3, 
+    parser.add_argument('--n_in_rows', type=int, default=5, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--exploration_rate', type=float, default=0.1, 
                         help='exploration rate for self-play')
