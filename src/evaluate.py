@@ -42,9 +42,9 @@ class Evaluation():
             while not game_over:
                 valids = self.game.get_valid_moves(board)
                 if playerID == 0:
-                    action = self.players[0].get_action(board.get_state(), validMoves=valids)
+                    action = self.players[0].get_action(board.get_state(), validMoves=valids, getBestMove=True)
                 else:
-                    action = self.players[1].get_action(board.get_state(), validMoves=valids)
+                    action = self.players[1].get_action(board.get_state(), validMoves=valids, getBestMove=True)
                     
                 board = self.game.get_next_state(
                     board=board, 
