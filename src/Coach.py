@@ -3,6 +3,7 @@ import os
 import sys
 from collections import deque
 from pickle import Pickler, Unpickler
+from models.GomokuNet import GomokuNet
 from src.machine import Machine
 from random import shuffle
 from src.evaluate import Evaluation
@@ -130,7 +131,7 @@ class Coach():
         print('NUM OBS CLAMED:' ,len(trainExamples))
         
         shuffle(trainExamples)
-        
+        before_elo = self.players[0].get_elo()
         # training new network, keeping a copy of the old one
         self.players[0].learn(trainExamples, epochs=self.train_epochs, batch_size=self.batch_size)
         eval = Evaluation(self.game, players=self.players, n_compares=self.n_compares,
@@ -146,6 +147,7 @@ class Coach():
             print('REJECTING NEW MODEL')
             self.players[0].save_model(folder=self.load_folder_file[0], 
                                  filename='rejected_' + self.load_folder_file[1])
+            self.players[0].set_model(GomokuNet(input_shape=self.game.nnet_input_shape, output_shape=self.game.n_actions))
             self.players[0].load_model(folder=self.load_folder_file[0], 
                                  filename= self.load_folder_file[1])
             self.trainExamplesHistory.pop(-1)
@@ -156,6 +158,8 @@ class Coach():
             
             self.players[1].load_model(folder=self.load_folder_file[0], 
                                       filename=self.load_folder_file[1])
+            self.players[1].set_elo(self.players[0].get_elo())            
+
     def getCheckpointFile(self):
         return 'checkpoint_' + 'pt'
 
