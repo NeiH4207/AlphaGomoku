@@ -24,7 +24,7 @@ class Coach():
     def __init__(self, game, players, maxlenOfQueue=1000, numEps=10, tempThreshold=1,
                  show_screen=False,numItersForTrainExamplesHistory=15, updateThreshold=0.8, cpuct=1,
                  numMCTSSims=15, exploration_rate=0.25, checkpoint=None, train_epochs=20,
-                 batch_size=32, n_compares=30, speed=0.2, load_folder_file=None,):
+                 batch_size=32, loss_func='bce', n_compares=30, speed=0.2, load_folder_file=None,):
         
         self.game = game
         self.players = players
@@ -40,6 +40,7 @@ class Coach():
         self.updateThreshold = updateThreshold
         self.train_epochs = train_epochs
         self.batch_size = batch_size
+        self.loss_func = loss_func
         self.n_compares = n_compares
         self.speed = speed
         self.load_folder_file = load_folder_file
@@ -47,6 +48,9 @@ class Coach():
         self.trainExamplesHistory = []  # history of examples from numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
         self.scores = AverageMeter2()
+        
+        for player in players:
+            player.set_loss_function(loss_func)
         
     def executeEpisode(self):
         """

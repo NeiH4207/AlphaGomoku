@@ -21,7 +21,7 @@ def parse_args():
                         help='height of the board')
     parser.add_argument('--width', type=int, default=5, 
                         help='width of the board')
-    parser.add_argument('--show_screen', type=bool, 
+    parser.add_argument('--show_screen', action='store_true',
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
@@ -55,6 +55,8 @@ def parse_args():
                         help='Number of epochs to train the neural network.')
     parser.add_argument('--trainBatchSize', type=int, default=32,
                         help='Batch size for training.')
+    parser.add_argument('--loss_func', type=str, default='mse',
+                        help='Loss function for training.')
     parser.add_argument('--load_model', type=bool, default=True, 
                         help='Whether to load the pre-trained model.')
     parser.add_argument('--load_folder_file', type=list, default=['trainned_models','nnet'], 
@@ -73,7 +75,9 @@ def main():
                       n_in_rows=args.n_in_rows)
     players = [Player(name=str(i)) for i in range(2)]
     env.set_players(players)
-    
+    for player in players:
+        player.set_loss_function(args.loss_func)
+        
     coach = Coach ( game=env, 
                     players=players, 
                     numEps=args.numEps, 
@@ -88,6 +92,7 @@ def main():
                     checkpoint=args.checkpoint,
                     train_epochs=args.trainEpochs,
                     batch_size=args.trainBatchSize,
+                    loss_func=args.loss_func,
                     n_compares=args.nCompare,
                     speed=args.speed,
                     load_folder_file=args.load_folder_file,

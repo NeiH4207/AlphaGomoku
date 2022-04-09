@@ -38,7 +38,10 @@ class Player:
 
     def set_score(self, score):
         self.score = score
-        
+    
+    def set_loss_function(self, loss_function):
+        self.nnet.set_loss_function(loss_function)
+    
     def predict(self, state):
         return self.nnet.predict(state)
     
