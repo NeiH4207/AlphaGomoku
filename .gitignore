@@ -4,6 +4,7 @@ __pycache__/
 *ignore
 Experiments/
 temp/
+trainned_models/
 Models/
 *.py[cod]
 *$py.class

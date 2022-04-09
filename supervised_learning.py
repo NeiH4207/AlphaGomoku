@@ -3,7 +3,7 @@ from copy import deepcopy
 from src.environment import Environment
 
 from src.utils import dotdict
-from src.GomokuNet import GomokuNet
+from models.GomokuNet import GomokuNet
 from src.machine import Machine
 from src.evaluate import Evaluation
 from src.MCTS import MCTS

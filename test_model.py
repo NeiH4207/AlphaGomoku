@@ -3,7 +3,7 @@ from src.environment import Environment
 
 from src.utils import dotdict
 from src.model import Policy
-from src.SimpleNet import GomokuNet
+from models.SimpleNet import GomokuNet
 from src.evaluate import Evaluation
 from random import seed
 

@@ -1,30 +1,9 @@
 from copy import deepcopy as dcopy
 from numpy import array
 from GameBoard.game_board import Screen
+from models.GomokuNet import GomokuNet
 from src.utils import flatten
 import numpy as np
-
-# Gomoku player class
-class Player:
-    def __init__(self, name = None, symbol = None, color = None):
-        self.name = name
-        self.symbol = symbol
-        self.color = color
-        self.score = 0
-        self.last_move = None
-        self.n_moves = 0
-        
-    def reset_score(self):
-        self.score = 0
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.name
-
-    def __eq__(self, other):
-        return self.name == other.name
 
 class Board(object):
     def __init__(self, height, width):
@@ -32,7 +11,7 @@ class Board(object):
         self.width = width
         self.board = np.zeros((2, height, width))
         self.n_marks = 0
-    
+
     def get_state(self):
         return dcopy(self.board)
     
@@ -91,26 +70,47 @@ class Board(object):
             print(row)
         print('-----------')
         
+    def to_string(self):
+        str_board = ''
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.board[0][i][j] == 1:
+                    str_board += 'X'
+                elif self.board[1][i][j] == 1:
+                    str_board += 'O'
+                else:
+                    str_board += '-'
+            str_board += '\n'
+        return str_board
+
 class Environment(object):
 
-    def __init__(self, args):
-        self.args = args
-        self.show_screen = args.show_screen
-        self.n_inputs = 2
-        self.max_n_agents = 1
-        self.height = args.height
-        self.width = args.width
-        self.max_n_turns = self.height * self.width
+    def __init__(self, height=None, width=None, show_screen=False, n_inputs=None,
+                 max_n_agents=1, n_in_rows=None):
+        self.show_screen = show_screen
+        self.n_inputs = n_inputs
+        self.max_n_agents = max_n_agents
+        self.height = height
+        self.width = width
+        self.max_n_turns = height * width
         self.n_actions = self.max_n_turns
-        self.num_players = 2
-        self.players = [Player(i) for i in range(self.num_players)]
-        if args.show_screen:
+        self.n_in_rows = n_in_rows
+        self.num_players = None
+        self.players = None
+        self.nnet_input_shape = (2, self.height, self.width)
+        if show_screen:
             self.screen = Screen(self)
             self.screen.init()
     
+    def set_players(self, players):
+        self.players = players
+        self.num_players = len(players)
+        for player in players:
+            player.set_model(GomokuNet(input_shape=self.nnet_input_shape, output_shape=self.n_actions))
+    
     """ run in a screen """
     def play(self):
-        if not self.args.show_screen:
+        if not self.show_screen:
             raise ValueError('Screen mode unable!')
         self.screen.start()
     
@@ -141,7 +141,7 @@ class Environment(object):
         """
         display game screen
         """
-        if self.args.show_screen:
+        if self.show_screen:
             self.screen.render()
         
     def get_ub_board_size(self):
@@ -154,7 +154,7 @@ class Environment(object):
         sym_boards = []
         sym_pis = []
         pi = np.array(pi).reshape(self.height, self.width)
-        for k in [1, 2, 3, 4]:
+        for k in [0, 1, 2, 3]:
             b = board.root90(k)
             p = np.rot90(pi, k)
             sym_boards.append(b)
@@ -211,10 +211,10 @@ class Environment(object):
                 y2 += dy[i + 4]
                 n_in_rows += 1
             
-            if n_in_rows > self.args.n_in_rows:
+            if n_in_rows > self.n_in_rows:
                 return True
             
-            if n_in_rows == self.args.n_in_rows:
+            if n_in_rows == self.n_in_rows:
                 if not self.in_board(x1, y1, x2, y2):
                     return True
                 if board.get_state()[1 - playerID][x1][y1] == 0 or board.get_state()[1 - playerID][x2][y2] == 0:

@@ -12,10 +12,16 @@ class MCTS():
     This class handles the MCTS tree.
     """
 
-    def __init__(self, game, nnet, args):
+    def __init__(self, game=None, player=None, numMCTSSims=15, selfplay=True, 
+                 exploration_rate=0.25, cpuct=1):
         self.game = game
-        self.nnet = nnet
-        self.args = args
+        self.player = player
+        self.numMCTSSims = numMCTSSims
+        self.selfplay = selfplay
+        self.exploration_rate = exploration_rate
+        self.cpuct = cpuct
+        
+        
         self.Qsa  = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa  = {}  # stores #times edge s,a was visited
         self.Ns   = {}  # stores #times board s was visited
@@ -45,7 +51,7 @@ class MCTS():
                    proportional to Nsa[(s,a)]**(1./temp)
         """
         s = board.string_representation()
-        for _ in range(self.args.numMCTSSims):
+        for _ in range(self.numMCTSSims):
             self.search(board)
 
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 
@@ -65,7 +71,7 @@ class MCTS():
                 probs = [1 / self.game.n_actions for _ in range(self.game.n_actions)]
             else:
                 probs = [x / counts_sum for x in counts]
-        if self.args._is_selfplay:
+        if self.selfplay:
                 # add Dirichlet Noise for exploration (needed for
                 # self-play training)
                 valids = self.game.get_valid_moves(board)
@@ -73,12 +79,12 @@ class MCTS():
                 # renomalize dirictlet_rd to sum to 1
                 dirictlet_rd = dirictlet_rd / np.sum(dirictlet_rd)
                 # add dirictlet noise to probs
-                probs = np.array(probs) * (1 - self.args.exploration_rate) + dirictlet_rd * self.args.exploration_rate
+                probs = np.array(probs) * (1 - self.exploration_rate) + dirictlet_rd * self.exploration_rate
         return probs
     
     def predict(self, board):
         s = board.string_representation()
-        for _ in range(self.args.numMCTSSims):
+        for _ in range(self.numMCTSSims):
             self.search(board)
 
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 
@@ -117,8 +123,7 @@ class MCTS():
 
         if s not in self.Ps:
             # leaf node
-            self.Ps[s], v = self.nnet.step(board.get_state())
-            self.Ps[s], v = self.Ps[s][0], v[0]
+            self.Ps[s], v = self.player.predict(board.get_state())
             # if np.random.uniform() < self.args.exp_rate:
             #     # explore
             #     probs = get_probs(board.get_state())
@@ -136,9 +141,11 @@ class MCTS():
             else:
                 # if all valid moves were masked make all valid moves equally probable
 
-                # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
-                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.   
+                # NB! All valid moves may be masked if either your player architecture is insufficient or you've get overfitting or something else.
+                # If you have got dozens or hundreds of these messages you should pay attention to your player and/or training process.   
                 log.error("All valid moves were masked, doing a workaround.")
+                log.error("Board:")
+                log.error(board.to_string())
                 self.Ps[s] += 1 / self.game.n_actions
                 return 0
      
@@ -150,10 +157,10 @@ class MCTS():
         for a in range(self.game.n_actions):
             if valids[a]:
                 if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
+                    u = self.Qsa[(s, a)] + self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
                             1 + self.Nsa[(s, a)])
                 else:
-                    u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
                 if u > cur_best:
                     cur_best = u
                     best_act = a

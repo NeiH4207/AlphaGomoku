@@ -20,15 +20,32 @@ class Coach():
     in Game and NeuralNet. args are specified in main.py.
     """
 
-    def __init__(self, game, nnet, pnet, args):
+    def __init__(self, game, players, maxlenOfQueue=1000, numEps=10, tempThreshold=1,
+                 show_screen=False,numItersForTrainExamplesHistory=15, updateThreshold=0.8, cpuct=1,
+                 numMCTSSims=15, exploration_rate=0.25, checkpoint=None, train_epochs=20,
+                 batch_size=32, n_compares=30, speed=0.2, load_folder_file=None,):
+        
         self.game = game
-        self.nnet = nnet
-        self.pnet = pnet  # the competitor network
-        self.args = args
-        self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
+        self.players = players
+        self.maxlenOfQueue = maxlenOfQueue
+        self.numEps = numEps
+        self.tempThreshold = tempThreshold
+        self.cpuct = cpuct  
+        self.numMCTSSims = numMCTSSims
+        self.exploration_rate = exploration_rate
+        self.show_screen = show_screen
+        self.numItersForTrainExamplesHistory = numItersForTrainExamplesHistory
+        self.checkpoint = checkpoint
+        self.updateThreshold = updateThreshold
+        self.train_epochs = train_epochs
+        self.batch_size = batch_size
+        self.n_compares = n_compares
+        self.speed = speed
+        self.load_folder_file = load_folder_file
+        
+        self.trainExamplesHistory = []  # history of examples from numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
         self.scores = AverageMeter2()
-        self.machine = Machine(self.game, self.nnet)
         
     def executeEpisode(self):
         """
@@ -54,14 +71,14 @@ class Coach():
         
         while True:
             episodeStep += 1
-            temp = int(episodeStep < self.args.tempThreshold)
+            temp = int(episodeStep < self.tempThreshold)
             pi = self.mcts.getActionProb(board, temp)
             sym_boards, sym_pis = self.game.get_symmetric(board, pi)
             for sym_board, sym_pi in zip(sym_boards, sym_pis):
                 trainExamples.append([sym_board.get_state(), sym_pi, player])
             
             action = np.random.choice(len(pi), p=pi)
-            board = self.game.get_next_state(board, action, player, render=self.args.show_screen)
+            board = self.game.get_next_state(board, action, player, render=self.show_screen)
             terminate, r = self.game.get_game_ended(board, action)
             if terminate:
                 if r != 0:
@@ -81,20 +98,24 @@ class Coach():
         It then pits the new neural network against the old one and accepts it
         only if it wins >= updateThreshold fraction of games.
         """
-        print('Current NNET ELO:', self.nnet.elo)
-        self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
+        print('Current NNET ELO:', self.players[0].get_elo())
+        self.mcts = MCTS(self.game, self.players[0],
+                         numMCTSSims=self.numMCTSSims,
+                         cpuct=self.cpuct,
+                         exploration_rate=self.exploration_rate,
+                         selfplay=True)
         self.game.reset()
         # examples of the iteration
         if not self.skipFirstSelfPlay or iter > 0:
-            self.iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
+            self.iterationTrainExamples = deque([], maxlen=self.maxlenOfQueue)
 
-            for _ in tqdm(range(self.args.numEps), desc="Self Play"):
+            for _ in tqdm(range(self.numEps), desc="Self Play"):
                 self.executeEpisode()
 
             # save the iteration examples to the history 
             self.trainExamplesHistory.append(self.iterationTrainExamples)
 
-        while len(self.trainExamplesHistory) > self.args.numItersForTrainExamplesHistory:
+        while len(self.trainExamplesHistory) > self.numItersForTrainExamplesHistory:
             log.warning(
                 f"Removing the oldest entry in trainExamples. len(trainExamplesHistory) = {len(self.trainExamplesHistory)}")
             self.trainExamplesHistory.pop(0)
@@ -107,39 +128,39 @@ class Coach():
         for e in self.trainExamplesHistory:
             trainExamples.extend(e)
         print('NUM OBS CLAMED:' ,len(trainExamples))
-        if len(trainExamples) < self.nnet.args.batch_size: return
         
         shuffle(trainExamples)
         
         # training new network, keeping a copy of the old one
-        self.nnet.train_examples(trainExamples)
-        eval = Evaluation(self.game, self.nnet, self.pnet)
+        self.players[0].learn(trainExamples, epochs=self.train_epochs, batch_size=self.batch_size)
+        eval = Evaluation(self.game, players=self.players, n_compares=self.n_compares,
+                          show_screen=self.show_screen, speed=self.speed)
 
         print('PITTING AGAINST PREVIOUS VERSION')
         nwins, pwins, draws = eval.run()
 
         print('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
-        print('NNET ELO:', self.nnet.elo)
-        print('PNET ELO:', self.pnet.elo)
-        if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
+        print('NNET ELO:', self.players[0].get_elo())
+        print('PNET ELO:', self.players[1].get_elo())
+        if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.updateThreshold:
             print('REJECTING NEW MODEL')
-            self.nnet.save_checkpoint(folder=self.args.load_folder_file[0], 
-                                 filename='rejected_' + self.args.load_folder_file[1])
-            self.nnet.load_checkpoint(folder=self.args.load_folder_file[0], 
-                                 filename= self.args.load_folder_file[1])
+            self.players[0].save_model(folder=self.load_folder_file[0], 
+                                 filename='rejected_' + self.load_folder_file[1])
+            self.players[0].load_model(folder=self.load_folder_file[0], 
+                                 filename= self.load_folder_file[1])
             self.trainExamplesHistory.pop(-1)
         else:
             print('ACCEPTING NEW MODEL')
-            self.nnet.save_checkpoint(folder=self.args.load_folder_file[0], 
-                                      filename=self.args.load_folder_file[1])
+            self.players[0].save_model(folder=self.load_folder_file[0], 
+                                      filename=self.load_folder_file[1])
             
-            self.pnet.load_checkpoint(folder=self.args.load_folder_file[0], 
-                                      filename=self.args.load_folder_file[1])
+            self.players[1].load_model(folder=self.load_folder_file[0], 
+                                      filename=self.load_folder_file[1])
     def getCheckpointFile(self):
         return 'checkpoint_' + 'pt'
 
     def saveTrainExamples(self):
-        folder = self.args.checkpoint
+        folder = self.checkpoint
         if not os.path.exists(folder):
             os.makedirs(folder)
         filename = os.path.join(folder, self.getCheckpointFile() + ".examples")

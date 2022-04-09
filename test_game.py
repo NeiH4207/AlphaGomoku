@@ -3,7 +3,7 @@ from random import random
 from src.environment import Environment
 from src.utils import dotdict, plot_elo
 from src.model import Policy
-from src.SimpleNet import GomokuNet
+from models.SimpleNet import GomokuNet
 from src.machine import Machine
 import time
 import sys

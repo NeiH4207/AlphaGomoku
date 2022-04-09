@@ -56,7 +56,6 @@ class Screen():
         self.screen.fill( BG_COLOR )
         self.draw_lines()
         self.screen.blit(self.background_img, self.coord(self.h, 0))
-        self.show_infor_winner()
         pygame.display.update()
 
     def show_infor_winner(self):
