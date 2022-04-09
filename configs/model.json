@@ -1,21 +1,21 @@
 {
     "Model-1":{
-        "conv1-num-filter": 128, 
-        "conv1-kernel-size": 7,
-        "conv1-stride": 2,
-        "conv1-padding": 3,
+        "conv1-num-filter": 64, 
+        "conv1-kernel-size": 3,
+        "conv1-stride": 1,
+        "conv1-padding": 1,
 
-        "conv2-num-filter": 256,
-        "conv2-kernel-size": 5,
+        "conv2-num-filter": 128,
+        "conv2-kernel-size": 3,
         "conv2-stride": 1,
-        "conv2-padding": 2,
+        "conv2-padding": 1,
         
-        "conv3-num-filter": 384,
+        "conv3-num-filter": 256,
         "conv3-kernel-size": 3,
         "conv3-stride": 1,
         "conv3-padding": 1,
         
-        "conv4-num-filter": 384,
+        "conv4-num-filter": 256,
         "conv4-kernel-size": 3,
         "conv4-stride": 1,
         "conv4-padding": 1,
@@ -28,6 +28,6 @@
         "fc4-num-units": 128,
 
         "optimizer": "adam",
-        "learning-rate": 0.001
+        "learning-rate": 0.005
     }   
 }

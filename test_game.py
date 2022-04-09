@@ -20,15 +20,15 @@ def parse_args():
                         help='nnet or ai-engine')
     parser.add_argument('--mode', type=str, default='test-model',
                         help='test-model or test-selfplay')
-    parser.add_argument('--height', type=int, default=3, 
+    parser.add_argument('--height', type=int, default=5, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=3, 
+    parser.add_argument('--width', type=int, default=5, 
                         help='width of the board')
     parser.add_argument('--show_screen', type=bool, default=True, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=3, 
+    parser.add_argument('--n_in_rows', type=int, default=4, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--_is_selfplay', type=bool, default=True,
                         help='if true, then self-play, else, then test')
@@ -38,7 +38,7 @@ def parse_args():
                         help='Number of games to play during arena play to determine if new net will be accepted.')
     parser.add_argument('--load_model', type=bool, default=True, 
                         help='Whether to load the pre-trained model.')
-    parser.add_argument('--load_folder_file', type=tuple, default=('trainned_models','nnet.pt'), 
+    parser.add_argument('--load_folder_file', type=list, default=['trainned_models','nnet'], 
                         help='(folder,file) to load the pre-trained model from.')
     args = parser.parse_args()
     args.load_folder_file[1] = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width) + '.pt'
