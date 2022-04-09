@@ -57,13 +57,15 @@ def parse_args():
                         help='Batch size for training.')
     parser.add_argument('--load_model', type=bool, default=True, 
                         help='Whether to load the pre-trained model.')
-    parser.add_argument('--load_folder_file', type=tuple, default=('trainned_models','nnet.pt'), 
+    parser.add_argument('--load_folder_file', type=tuple, default=('trainned_models','nnet'), 
                         help='(folder,file) to load the pre-trained model from.')
     parser.add_argument('--numItersForTrainExamplesHistory', type=int, default=10,
                         help='Number of iterations to store the trainExamples history.')
     parser.add_argument('--saved_model', type=bool, default=True, 
                         help='Whether to save the model.')
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.load_folder_file[1] = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width) + '.pt'
+    return args
 
 def main():
     args = parse_args()

@@ -1,5 +1,7 @@
 
+import argparse
 from random import random
+from src.player import Player
 from src.environment import Environment
 from src.utils import dotdict, plot_elo
 from src.model import Policy
@@ -10,23 +12,49 @@ import sys
 import pygame
 import numpy as np
 
-args = dotdict({
-    'height': 5,
-    'width': 5,
-    "n_in_rows": 4,
-    'show_screen': True,
-    'mode': 'test-model',
-    'model': 'nnet',
-    'load_folder_file': ('Models','nnet5x5.pt')
-})
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run_mode', type=str, default='train', 
+                        help='train or test')
+    parser.add_argument('--model', type=str, default='nnet', 
+                        help='nnet or ai-engine')
+    parser.add_argument('--mode', type=str, default='test-model',
+                        help='test-model or test-selfplay')
+    parser.add_argument('--height', type=int, default=3, 
+                        help='height of the board')
+    parser.add_argument('--width', type=int, default=3, 
+                        help='width of the board')
+    parser.add_argument('--show_screen', type=bool, default=True, 
+                        help='show the screen')
+    parser.add_argument('--speed', type=float, default=0, 
+                        help='speed of the game')
+    parser.add_argument('--n_in_rows', type=int, default=3, 
+                        help='number of consecutive stones in a row to win')
+    parser.add_argument('--_is_selfplay', type=bool, default=True,
+                        help='if true, then self-play, else, then test')
+    parser.add_argument('--numIters', type=int, default=1000,
+                        help='number of iterations')
+    parser.add_argument('--nCompare', type=int, default=50, 
+                        help='Number of games to play during arena play to determine if new net will be accepted.')
+    parser.add_argument('--load_model', type=bool, default=True, 
+                        help='Whether to load the pre-trained model.')
+    parser.add_argument('--load_folder_file', type=tuple, default=('trainned_models','nnet.pt'), 
+                        help='(folder,file) to load the pre-trained model from.')
+    args = parser.parse_args()
+    args.load_folder_file[1] = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width) + '.pt'
+    return args
 
 def main():
-    # Initialize environment
-    env = Environment(args)
+    args = parse_args()
+    env = Environment(args.height, args.width, args.show_screen,
+                      n_in_rows=args.n_in_rows)
+    players = [Player(name=str(i)) for i in range(2)]
+    env.set_players(players)
+    machine = players[0]
     if args.mode == 'test-model':
         if args.model == 'nnet':
-            machine = GomokuNet(env)
-            machine.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
+            machine.load_model(folder=args.load_folder_file[0], 
+                                      filename=args.load_folder_file[1])
             # plot_elo(machine._elo)
         elif args.model == 'ai-engine':
             machine = Machine(env)
@@ -38,10 +66,9 @@ def main():
             # Get action from player
             x, y = None, None
             if player == 1:
-                probs = machine.predict(board.get_state())
                 valids = env.get_valid_moves(board)
-                probs = probs * valids
-                action = env.convert_action_i2xy(np.argmax(probs))
+                action = machine.get_action(board.get_state(), validMoves=valids, getBestMove=True)
+                action = env.convert_action_i2xy(action)
                 x, y = action
             else:
                 events = pygame.event.get() 
