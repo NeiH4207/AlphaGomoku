@@ -44,7 +44,7 @@ class ResidualBlock(nn.Module):
     
 # ResNet
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=10):
+    def __init__(self, config, block, layers, num_classes=10):
         super(ResNet, self).__init__()
         self.in_channels = config['conv4-num-filter']
         self.device = 'cuda' if T.cuda.is_available() else 'cpu'
@@ -73,8 +73,10 @@ class ResNet(nn.Module):
         return out
     
 class GomokuNet(NNet):
-    def __init__(self, input_shape, output_shape):
+    def __init__(self, name, input_shape, output_shape):
         # game params
+        config = ModelConfig[name]
+        self.config = config
         self.input_shape = input_shape
         self.output_shape = output_shape
         self.in_channels = input_shape[0]
@@ -96,10 +98,16 @@ class GomokuNet(NNet):
         self.bn3 = nn.BatchNorm2d(config['conv3-num-filter']).to(self.device)
         self.bn4 = nn.BatchNorm2d(config['conv4-num-filter']).to(self.device)
         
-        self.resnet = ResNet(ResidualBlock, [2, 2, 2]).to(self.device)  
+        self.resnet = ResNet(config, ResidualBlock, [2, 2, 2]).to(self.device)  
         
-        self.last_dim = config['conv4-num-filter'] * ((((self.board_x - 2 + 1) >> 1) + 1) >> 1) * \
-                        ((((self.board_y - 2 + 1) >> 1) + 1) >> 1)
+        self.out_conv1_dim = int((self.board_x - config['conv1-kernel-size'] + 2 * config['conv1-padding']) / config['conv1-stride'] + 1)
+        self.out_conv2_dim = int((self.out_conv1_dim - config['conv2-kernel-size'] + 2 * config['conv2-padding']) / config['conv2-stride'] + 1)
+        self.out_conv3_dim = int((self.out_conv2_dim - config['conv3-kernel-size'] + 2 * config['conv3-padding']) / config['conv3-stride'] + 1)
+        self.out_conv4_dim = int((self.out_conv3_dim - config['conv4-kernel-size'] + 2 * config['conv4-padding']) / config['conv4-stride'] + 1)
+        self.out_resnet_dim = (((self.out_conv4_dim + 1) >> 1) + 1) >> 1
+        
+        self.last_dim = self.out_resnet_dim * self.out_resnet_dim * config['conv4-num-filter']
+        
         self.flatten_dim = self.last_dim 
 
         # self.last_channel_size = config.num_channels * (self.board_x - 4) * (self.board_y - 4)
@@ -129,11 +137,11 @@ class GomokuNet(NNet):
         s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
         s = F.relu(self.resnet(s))
         pi = s.view(-1, self.last_dim)
-        pi = F.dropout(F.relu(self.fc1(pi)), p=config['fc1-dropout'], training=self.training)  # batch_size x 1024
+        pi = F.dropout(F.relu(self.fc1(pi)), p=self.config['fc1-dropout'], training=self.training)  # batch_size x 1024
         pi = F.relu(self.fc2(pi))  # batch_size x 512
     
         v = s.view(-1, self.last_dim)
-        v = F.dropout((F.relu(self.fc3(v))), p=config['fc3-dropout'], training=self.training)  # batch_size x 1024
+        v = F.dropout((F.relu(self.fc3(v))), p=self.config['fc3-dropout'], training=self.training)  # batch_size x 1024
         v = F.relu(self.fc4(v)) # batch_size x 512
         pi = self.fc5(pi)                                                                         # batch_size x action_size
         v = self.fc6(v)                                              # batch_size x 1

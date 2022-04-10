@@ -84,7 +84,7 @@ class Coach():
             
             action = np.random.choice(len(pi), p=pi)
             board = self.game.get_next_state(board, action, player, render=self.show_screen)
-            terminate, r = self.game.get_game_ended(board, action)
+            terminate, r = self.game.get_game_ended(board, action, episodeStep)
             if terminate:
                 if r != 0:
                     self.game.players[player].score += 1

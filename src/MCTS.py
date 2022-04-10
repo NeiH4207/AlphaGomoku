@@ -13,13 +13,14 @@ class MCTS():
     """
 
     def __init__(self, game=None, player=None, numMCTSSims=15, selfplay=True, 
-                 exploration_rate=0.25, cpuct=1):
+                 exploration_rate=0.25, cpuct=2.5):
         self.game = game
         self.player = player
         self.numMCTSSims = numMCTSSims
         self.selfplay = selfplay
         self.exploration_rate = exploration_rate
-        self.cpuct = cpuct
+        self.cpuct_base = 19652
+        self.cpuct_init = cpuct
         
         
         self.Qsa  = {}  # stores Q values for s,a (as defined in the paper)
@@ -37,6 +38,10 @@ class MCTS():
         self.Ps = {}
         self.Es = {}
         self.Vs = {}
+        
+    def get_cpuct_value(self, s):
+        cpuct = math.log((self.Ns[s] + self.cpuct_base + 1) / self.cpuct_base) + self.cpuct_init
+        return cpuct
 
     def predict(self, board, temp=1):
         return self.getActionProb(board, temp)
@@ -156,11 +161,12 @@ class MCTS():
         # pick the action with the highest upper confidence bound
         for a in range(self.game.n_actions):
             if valids[a]:
+                cpuct = self.get_cpuct_value(s)
                 if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
+                    u = self.Qsa[(s, a)] + cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
                             1 + self.Nsa[(s, a)])
                 else:
-                    u = self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
                 if u > cur_best:
                     cur_best = u
                     best_act = a

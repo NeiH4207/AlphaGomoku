@@ -1,5 +1,5 @@
 {
-    "Model-1":{
+    "nnet3x3":{
         "conv1-num-filter": 64, 
         "conv1-kernel-size": 3,
         "conv1-stride": 1,
@@ -20,6 +20,70 @@
         "conv4-stride": 1,
         "conv4-padding": 1,
         
+        "fc1-num-units": 256,
+        "fc1-dropout": 0.5,
+        "fc2-num-units": 128,
+        "fc3-num-units": 64,
+        "fc3-dropout": 0.5,
+        "fc4-num-units": 32,
+
+        "optimizer": "adam",
+        "learning-rate": 0.005
+    },
+
+    "nnet6x6":{
+        "conv1-num-filter": 64, 
+        "conv1-kernel-size": 5,
+        "conv1-stride": 1,
+        "conv1-padding": 2,
+
+        "conv2-num-filter": 128,
+        "conv2-kernel-size": 3,
+        "conv2-stride": 1,
+        "conv2-padding": 1,
+        
+        "conv3-num-filter": 256,
+        "conv3-kernel-size": 3,
+        "conv3-stride": 1,
+        "conv3-padding": 0,
+        
+        "conv4-num-filter": 256,
+        "conv4-kernel-size": 3,
+        "conv4-stride": 1,
+        "conv4-padding": 0,
+        
+        "fc1-num-units": 512,
+        "fc1-dropout": 0.5,
+        "fc2-num-units": 256,
+        "fc3-num-units": 128,
+        "fc3-dropout": 0.5,
+        "fc4-num-units": 64,
+
+        "optimizer": "adam",
+        "learning-rate": 0.005
+    },
+
+    "nnet13x13":{
+        "conv1-num-filter": 128, 
+        "conv1-kernel-size": 7,
+        "conv1-stride": 1,
+        "conv1-padding": 2,
+
+        "conv2-num-filter": 256,
+        "conv2-kernel-size": 5,
+        "conv2-stride": 1,
+        "conv2-padding": 1,
+        
+        "conv3-num-filter": 512,
+        "conv3-kernel-size": 3,
+        "conv3-stride": 1,
+        "conv3-padding": 0,
+        
+        "conv4-num-filter": 512,
+        "conv4-kernel-size": 3,
+        "conv4-stride": 1,
+        "conv4-padding": 0,
+        
         "fc1-num-units": 1024,
         "fc1-dropout": 0.5,
         "fc2-num-units": 512,
@@ -29,5 +93,5 @@
 
         "optimizer": "adam",
         "learning-rate": 0.005
-    }   
+    } 
 }

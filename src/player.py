@@ -23,6 +23,7 @@ class Player:
     
     def set_elo(self, elo):
         self.elo = elo
+        self.nnet.elo = elo
     
     def get_elo(self):
         return self.elo

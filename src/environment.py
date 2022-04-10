@@ -11,6 +11,7 @@ class Board(object):
         self.width = width
         self.board = np.zeros((2, height, width))
         self.n_marks = 0
+        self.cur_depth = 0
 
     def get_state(self):
         return dcopy(self.board)
@@ -102,11 +103,11 @@ class Environment(object):
             self.screen = Screen(self)
             self.screen.init()
     
-    def set_players(self, players):
+    def set_players(self, players=None, model_name=None):
         self.players = players
         self.num_players = len(players)
         for player in players:
-            player.set_model(GomokuNet(input_shape=self.nnet_input_shape, output_shape=self.n_actions))
+            player.set_model(GomokuNet(name=model_name, input_shape=self.nnet_input_shape, output_shape=self.n_actions))
     
     """ run in a screen """
     def play(self):
@@ -127,10 +128,10 @@ class Environment(object):
             self.screen.reset()
         
     """ return a reward after implement action """
-    def get_game_ended(self, board, action):
+    def get_game_ended(self, board, action, depth=1):
         action = self.convert_action_i2xy(action) 
         if self.check_game_ended(board, 1, action):
-            return (True, -1)
+            return (True, -1.0 / np.log10(depth))
         
         if board.is_fully():
             return (True, 0)

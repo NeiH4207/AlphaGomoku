@@ -13,19 +13,19 @@ log = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--run_mode', type=str, default='train', 
-                        help='train or test')
+    parser.add_argument('--model-name', type=str, default='nnet3x3', 
+                        help='name of the model')
     parser.add_argument('--visualize', type=bool, default=False, 
                         help='visualize the game')
-    parser.add_argument('--height', type=int, default=5, 
+    parser.add_argument('--height', type=int, default=3, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=5, 
+    parser.add_argument('--width', type=int, default=3, 
                         help='width of the board')
-    parser.add_argument('--show_screen', action='store_true',
+    parser.add_argument('--show_screen', action='store_true', default=True, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=5, 
+    parser.add_argument('--n_in_rows', type=int, default=3, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--exploration_rate', type=float, default=0.1, 
                         help='exploration rate for self-play')
@@ -47,7 +47,7 @@ def parse_args():
                         help='Number of game examples to train the neural networks.')
     parser.add_argument('--numMCTSSims', type=int, default=50, 
                         help='Number of games moves for MCTS to simulate.')
-    parser.add_argument('--cpuct', type=float, default=1, 
+    parser.add_argument('--cpuct', type=float, default=2.5, 
                         help='a heuristic value used to balance exploration and exploitation.')
     parser.add_argument('--checkpoint', type=str, default='./temp/', 
                         help='Directory to save the checkpoints.')
@@ -57,16 +57,17 @@ def parse_args():
                         help='Batch size for training.')
     parser.add_argument('--loss_func', type=str, default='mse',
                         help='Loss function for training.')
-    parser.add_argument('--load_model', type=bool, default=True, 
-                        help='Whether to load the pre-trained model.')
+    parser.add_argument('--load_model', action='store_true',
+                        help='Load a saved model.')
     parser.add_argument('--load_folder_file', type=list, default=['trainned_models','nnet'], 
                         help='(folder,file) to load the pre-trained model from.')
     parser.add_argument('--numItersForTrainExamplesHistory', type=int, default=10,
                         help='Number of iterations to store the trainExamples history.')
-    parser.add_argument('--saved_model', type=bool, default=True, 
+    parser.add_argument('--saved_model', action='store_true', default=True,  
                         help='Whether to save the model.')
     args = parser.parse_args()
-    args.load_folder_file[1] = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width) + '.pt'
+    args.model_name = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width)
+    args.load_folder_file[1] = args.model_name + '.pt'
     return args
 
 def main():
@@ -74,10 +75,13 @@ def main():
     env = Environment(args.height, args.width, args.show_screen,
                       n_in_rows=args.n_in_rows)
     players = [Player(name=str(i)) for i in range(2)]
-    env.set_players(players)
+    env.set_players(players, model_name=args.model_name)
+    
     for player in players:
         player.set_loss_function(args.loss_func)
-        
+        if args.load_model:
+            player.load_model(args.load_folder_file[0], args.load_folder_file[1])
+            
     coach = Coach ( game=env, 
                     players=players, 
                     numEps=args.numEps, 
