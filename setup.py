@@ -29,6 +29,8 @@ setup (
     entry_points={
         'console_scripts': [
             'gomoku=mcts_training:main'
+            'gomoku-supervised=supervised_learning:main'
+            'gomoku-play=test_game:main'
         ]
     },
     

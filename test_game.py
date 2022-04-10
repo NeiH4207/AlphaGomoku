@@ -3,9 +3,6 @@ import argparse
 from random import random
 from src.player import Player
 from src.environment import Environment
-from src.utils import dotdict, plot_elo
-from src.model import Policy
-from models.SimpleNet import GomokuNet
 from src.machine import Machine
 import time
 import sys
@@ -14,8 +11,8 @@ import numpy as np
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--run_mode', type=str, default='train', 
-                        help='train or test')
+    parser.add_argument('--model-name', type=str, default='nnet3x3', 
+                        help='name of the model')
     parser.add_argument('--model', type=str, default='nnet', 
                         help='nnet or ai-engine')
     parser.add_argument('--mode', type=str, default='test-model',
@@ -41,7 +38,8 @@ def parse_args():
     parser.add_argument('--load_folder_file', type=list, default=['trainned_models','nnet'], 
                         help='(folder,file) to load the pre-trained model from.')
     args = parser.parse_args()
-    args.load_folder_file[1] = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width) + '.pt'
+    args.model_name = args.load_folder_file[1] + str(args.height) + 'x' + str(args.width)
+    args.load_folder_file[1] = args.model_name + '.pt'
     return args
 
 def main():
@@ -49,7 +47,7 @@ def main():
     env = Environment(args.height, args.width, args.show_screen,
                       n_in_rows=args.n_in_rows)
     players = [Player(name=str(i)) for i in range(2)]
-    env.set_players(players)
+    env.set_players(players, model_name=args.model_name)
     machine = players[0]
     if args.mode == 'test-model':
         if args.model == 'nnet':
