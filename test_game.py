@@ -17,15 +17,15 @@ def parse_args():
                         help='nnet or ai-engine')
     parser.add_argument('--mode', type=str, default='test-model',
                         help='test-model or test-selfplay')
-    parser.add_argument('--height', type=int, default=6, 
+    parser.add_argument('--height', type=int, default=9, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=6, 
+    parser.add_argument('--width', type=int, default=9, 
                         help='width of the board')
     parser.add_argument('--show_screen', type=bool, default=True, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=4, 
+    parser.add_argument('--n_in_rows', type=int, default=5, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--_is_selfplay', type=bool, default=True,
                         help='if true, then self-play, else, then test')
@@ -96,7 +96,7 @@ def main():
                 board = env.get_new_board()
                 env.restart()
                 env.render()
-                player = np.random.choice([0, 1])
+                player = 1 - player
             else:
                 player = 1 - player
     else:   

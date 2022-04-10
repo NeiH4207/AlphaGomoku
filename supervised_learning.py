@@ -137,6 +137,7 @@ def main():
                 game_over, return_value = env.get_game_ended(board, action)
                 if game_over:
                     env.render()
+                    players[player].score += 1
                     for x in history:
                         if x[3] == player:
                             _board, pi, act, v = x[0], x[1], x[2], 1
