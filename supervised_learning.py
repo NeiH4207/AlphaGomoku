@@ -21,15 +21,15 @@ def parse_args():
                         help='name of the model')
     parser.add_argument('--visualize', type=bool, default=False, 
                         help='visualize the game')
-    parser.add_argument('--height', type=int, default=13, 
+    parser.add_argument('--height', type=int, default=6, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=13, 
+    parser.add_argument('--width', type=int, default=6, 
                         help='width of the board')
-    parser.add_argument('--show_screen', action='store_true', 
+    parser.add_argument('--show_screen', action='store_true', default=True,
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=5, 
+    parser.add_argument('--n_in_rows', type=int, default=4, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--exploration_rate', type=float, default=0.1, 
                         help='exploration rate for self-play')
@@ -69,7 +69,7 @@ def parse_args():
                         help='Number of iterations to store the trainExamples history.')
     parser.add_argument('--saved_model', action='store_true', default=True,  
                         help='Whether to save the model.')
-    parser.add_argument('--algo', type=str, default='greedy',
+    parser.add_argument('--algo', type=str, default='stupid',
                         help='Which algorithm to use.')
     parser.add_argument('--mem_size', type=int, default=20000,
                         help='Size of the memory.')
@@ -91,14 +91,13 @@ def main():
         if args.load_model:
             player.load_model(args.load_folder_file[0], args.load_folder_file[1])
             
-    if args.algo == 'mcts':
-        machine = MCTS(env, players[0],
-                         numMCTSSims=args.numMCTSSims,
-                         cpuct=args.cpuct,
-                         exploration_rate=args.exploration_rate,
-                         selfplay=False)
-    else:
-        machine = Machine(env, players[0])
+    machine_1 = MCTS(env, players[0],
+                        numMCTSSims=args.numMCTSSims,
+                        cpuct=args.cpuct,
+                        exploration_rate=args.exploration_rate,
+                        selfplay=True)
+    if args.algo == 'stupid':
+        machine_2 = Machine(env, players[0])
         
     replay_memories = deque([], maxlen=args.mem_size)
     print('NNET ELO:', players[0].get_elo())
@@ -106,7 +105,8 @@ def main():
     for iter in range(args.numEps):
         # -------
         trainExamples = deque([], maxlen=args.mem_size)
-        machine.reset()
+        machine_1.reset()
+        machine_2.reset()
         for _ in tqdm(range(args.numEps), desc="Self Play"):
             history = []
             board = env.get_new_board()
@@ -114,7 +114,9 @@ def main():
             env.restart()   
             while True:
                 if player == 0:
-                    probs = machine.predict(board)
+                    probs = machine_1.predict(board)
+                    valid = env.get_valid_moves(board)
+                    probs *= valid
                     action = np.random.choice(len(probs), p=probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
@@ -122,7 +124,7 @@ def main():
                     for sym_board, sym_pi in zip(sym_boards, sym_pis):
                         history.append([sym_board, sym_pi, action, player])
                 else:
-                    probs = machine.predict(board)
+                    probs = machine_2.predict(board)
                     action = np.random.choice(len(probs), p=probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
