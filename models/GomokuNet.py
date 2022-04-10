@@ -75,6 +75,7 @@ class ResNet(nn.Module):
 class GomokuNet(NNet):
     def __init__(self, name, input_shape, output_shape):
         # game params
+        self.name = name
         config = ModelConfig[name]
         self.config = config
         self.input_shape = input_shape

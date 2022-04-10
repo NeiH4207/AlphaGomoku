@@ -131,7 +131,7 @@ class Environment(object):
     def get_game_ended(self, board, action, depth=1):
         action = self.convert_action_i2xy(action) 
         if self.check_game_ended(board, 1, action):
-            return (True, -1.0 / np.log10(depth))
+            return (True, -1.0 / np.log(depth + 1))
         
         if board.is_fully():
             return (True, 0)

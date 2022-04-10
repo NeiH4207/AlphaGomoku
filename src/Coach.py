@@ -151,7 +151,7 @@ class Coach():
             print('REJECTING NEW MODEL')
             self.players[0].save_model(folder=self.load_folder_file[0], 
                                  filename='rejected_' + self.load_folder_file[1])
-            self.players[0].set_model(GomokuNet(input_shape=self.game.nnet_input_shape, output_shape=self.game.n_actions))
+            self.players[0].set_model(GomokuNet(name=self.players[0].nnet.name, input_shape=self.game.nnet_input_shape, output_shape=self.game.n_actions))
             self.players[0].load_model(folder=self.load_folder_file[0], 
                                  filename= self.load_folder_file[1])
             self.trainExamplesHistory.pop(-1)
