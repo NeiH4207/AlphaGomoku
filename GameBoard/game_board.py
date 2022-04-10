@@ -30,7 +30,7 @@ class Screen():
             self.color_B = (129, 188, 255)
             self.dir_path = os.path.dirname(os.path.realpath(__file__))
             self.load_image()
-            pygame.display.set_caption( 'ProCon-2020' ) 
+            pygame.display.set_caption( 'Gomoku' ) 
 
     def render(self):
         pygame.display.update()

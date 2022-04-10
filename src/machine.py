@@ -54,7 +54,8 @@ class Machine():
                     i = self.game.convert_action_c2i(coord)
                     flatten_probs[i] = probs[coord]
             if np.sum(flatten_probs) == 0:
-                flatten_probs[np.random.randint(0, self.game.n_actions - 1)] = 1
+                center = self.game.n_actions // 2
+                flatten_probs[center] = 1
             return flatten_probs
         return False
     
