@@ -1,5 +1,6 @@
 
 import argparse
+from models import AZNet
 from src.environment import Environment
 from src.player import Player
 
@@ -120,17 +121,15 @@ def main():
                     action = np.random.choice(len(probs), p=probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
-                    sym_boards, sym_pis = env.get_symmetric(board, probs)
-                    for sym_board, sym_pi in zip(sym_boards, sym_pis):
-                        history.append([sym_board, sym_pi, action, player])
                 else:
                     probs = machine_2.predict(board)
                     action = np.random.choice(len(probs), p=probs)
                     probs = [0] * env.n_actions
                     probs[action] = 1
-                    sym_boards, sym_pis = env.get_symmetric(board, probs)
-                    for sym_board, sym_pi in zip(sym_boards, sym_pis):
-                        history.append([sym_board, sym_pi, action, player])
+                    
+                sym_boards, sym_pis = env.get_symmetric(board, probs)
+                for sym_board, sym_pi in zip(sym_boards, sym_pis):
+                    history.append([sym_board, sym_pi, action, player])
                     
                 board = env.get_next_state(board, action, player, render=args.show_screen)
                 # env.log_state(board, ('X', 'O') if player == 0 else ('O', 'X'))
@@ -172,7 +171,7 @@ def main():
             print('REJECTING NEW MODEL')
             players[0].save_model(folder=args.load_folder_file[0], 
                                  filename='rejected_' + args.load_folder_file[1])
-            players[0].set_model(GomokuNet(name=players[0].nnet.name, input_shape=env.nnet_input_shape, output_shape=env.n_actions))
+            players[0].set_model(AZNet(name=players[0].nnet.name, input_shape=env.nnet_input_shape, output_shape=env.n_actions))
             players[0].load_model(folder=args.load_folder_file[0], 
                                  filename= args.load_folder_file[1])
         else:

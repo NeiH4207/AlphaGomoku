@@ -4,6 +4,7 @@ from random import random
 from src.player import Player
 from src.environment import Environment
 from src.machine import Machine
+from collections import deque
 import time
 import sys
 import pygame
@@ -17,15 +18,15 @@ def parse_args():
                         help='nnet or ai-engine')
     parser.add_argument('--mode', type=str, default='test-model',
                         help='test-model or test-selfplay')
-    parser.add_argument('--height', type=int, default=9, 
+    parser.add_argument('--height', type=int, default=3, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=9, 
+    parser.add_argument('--width', type=int, default=3, 
                         help='width of the board')
     parser.add_argument('--show_screen', type=bool, default=True, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=5, 
+    parser.add_argument('--n_in_rows', type=int, default=3, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--_is_selfplay', type=bool, default=True,
                         help='if true, then self-play, else, then test')
@@ -51,6 +52,7 @@ def main():
     machine = players[0]
     if args.mode == 'test-model':
         if args.model == 'nnet':
+            pass
             machine.load_model(folder=args.load_folder_file[0], 
                                       filename=args.load_folder_file[1])
             # plot_elo(machine._elo)
@@ -60,7 +62,7 @@ def main():
         game_over = False
         player = np.random.choice([0, 1])
         board = env.get_new_board()
-        trainExamples = []
+        trainExamples = deque([], maxlen=200)
         history = []
         while True:
             # Get action from player
@@ -111,7 +113,6 @@ def main():
                     trainExamples.append([_board.get_state(), pi, v]) 
                 players[0].learn(trainExamples, epochs=1, batch_size=len(trainExamples))
                 
-                trainExamples = []
                 history = []
                 board = env.get_new_board()
                 env.restart()
