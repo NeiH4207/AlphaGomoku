@@ -1,6 +1,7 @@
 from copy import deepcopy as dcopy
 from numpy import array
 from GameBoard.game_board import Screen
+from models.AZNet import AZNet
 from models.GomokuNet import GomokuNet
 from src.utils import flatten
 import numpy as np
@@ -107,7 +108,7 @@ class Environment(object):
         self.players = players
         self.num_players = len(players)
         for player in players:
-            player.set_model(GomokuNet(name=model_name, input_shape=self.nnet_input_shape, output_shape=self.n_actions))
+            player.set_model(AZNet(name=model_name, input_shape=self.nnet_input_shape, output_shape=self.n_actions))
     
     """ run in a screen """
     def play(self):

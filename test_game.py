@@ -60,6 +60,8 @@ def main():
         game_over = False
         player = np.random.choice([0, 1])
         board = env.get_new_board()
+        trainExamples = []
+        history = []
         while True:
             # Get action from player
             x, y = None, None
@@ -72,6 +74,8 @@ def main():
                 events = pygame.event.get() 
                 for event in events:
                     if event.type == pygame.QUIT:
+                        players[0].save_model(folder=args.load_folder_file[0], 
+                                        filename=args.load_folder_file[1])
                         sys.exit()
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         mouseX = event.pos[1] # x
@@ -85,6 +89,12 @@ def main():
             else:
                 continue
             x, y = action
+            probs = np.zeros(board.get_state()[0].shape)
+            probs[x][y] = 1
+            sym_boards, sym_pis = env.get_symmetric(board, probs)
+            for sym_board, sym_pi in zip(sym_boards, sym_pis):
+                history.append([sym_board, sym_pi, action, player])
+                
             board = env.get_next_state(board, action, player, render=args.show_screen)
             game_over, result = env.get_game_ended(board, env.convert_action_c2i(action))
             if game_over:
@@ -92,11 +102,21 @@ def main():
                     env.players[1 - player].score += 1
                 elif result == -1:
                     env.players[player].score += 1
-                time.sleep(1)
+                    
+                for x in history:
+                    if x[3] == player:
+                        _board, pi, act, v = x[0], x[1], x[2], 1
+                    else:
+                        _board, pi, act, v = x[0], x[1], x[2], -1
+                    trainExamples.append([_board.get_state(), pi, v]) 
+                players[0].learn(trainExamples, epochs=1, batch_size=len(trainExamples))
+                
+                trainExamples = []
+                history = []
                 board = env.get_new_board()
                 env.restart()
                 env.render()
-                player = 1 - player
+                player = np.random.choice([0, 1])
             else:
                 player = 1 - player
     else:   
