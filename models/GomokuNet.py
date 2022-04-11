@@ -48,9 +48,10 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         self.in_channels = config['conv4-num-filter']
         self.device = 'cuda' if T.cuda.is_available() else 'cpu'
-        self.layer1 = self.make_layer(block, config['conv4-num-filter'], layers[0])
-        self.layer2 = self.make_layer(block, config['conv4-num-filter'], layers[1], 2)
-        self.layer3 = self.make_layer(block, config['conv4-num-filter'], layers[2], 2)
+        self.layers = []
+        self.layers.append(self.make_layer(block, config['conv4-num-filter'], layers[0]))
+        for i in range(len(layers) - 1):
+            self.layers.append(self.make_layer(block, config['conv4-num-filter']*(2**i), layers[i+1], stride=2))
         self.avg_pool = nn.AvgPool2d(2)
         
     def make_layer(self, block, out_channels, blocks, stride=1):
@@ -67,9 +68,10 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
     
     def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = self.layer3(out)
+        for layer in self.layers:
+            x = layer(x)
+        out = self.avg_pool(x)
+        
         return out
     
 class GomokuNet(NNet):

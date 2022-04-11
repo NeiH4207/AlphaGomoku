@@ -17,15 +17,15 @@ def parse_args():
                         help='name of the model')
     parser.add_argument('--visualize', type=bool, default=False, 
                         help='visualize the game')
-    parser.add_argument('--height', type=int, default=6, 
+    parser.add_argument('--height', type=int, default=3, 
                         help='height of the board')
-    parser.add_argument('--width', type=int, default=6, 
+    parser.add_argument('--width', type=int, default=3, 
                         help='width of the board')
     parser.add_argument('--show_screen', action='store_true', default=True, 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
-    parser.add_argument('--n_in_rows', type=int, default=4, 
+    parser.add_argument('--n_in_rows', type=int, default=3, 
                         help='number of consecutive stones in a row to win')
     parser.add_argument('--exploration_rate', type=float, default=0.1, 
                         help='exploration rate for self-play')
@@ -37,7 +37,7 @@ def parse_args():
                         help='number of iterations')
     parser.add_argument('--nCompare', type=int, default=50, 
                         help='Number of games to play during arena play to determine if new net will be accepted.')
-    parser.add_argument('--numEps', type=int, default=5,
+    parser.add_argument('--numEps', type=int, default=20,
                         help='Number of complete self-play games to simulate during a new iteration.')
     parser.add_argument('--tempThreshold', type=int, default=10, 
                         help='tempThreshold')
@@ -51,7 +51,7 @@ def parse_args():
                         help='a heuristic value used to balance exploration and exploitation.')
     parser.add_argument('--checkpoint', type=str, default='./temp/', 
                         help='Directory to save the checkpoints.')
-    parser.add_argument('--trainEpochs', type=int, default=2,
+    parser.add_argument('--trainEpochs', type=int, default=5,
                         help='Number of epochs to train the neural network.')
     parser.add_argument('--trainBatchSize', type=int, default=32,
                         help='Batch size for training.')
