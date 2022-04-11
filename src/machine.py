@@ -53,7 +53,7 @@ class Machine():
                 for coord in probs:
                     i = self.game.convert_action_c2i(coord)
                     flatten_probs[i] = probs[coord]
-            if np.sum(flatten_probs) == 0:
+            if np.sum(board.get_state()) == 0:
                 center = self.game.n_actions // 2
                 flatten_probs[center] = 1
             return flatten_probs

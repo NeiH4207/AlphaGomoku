@@ -36,6 +36,8 @@ def parse_args():
                         help='Number of games to play during arena play to determine if new net will be accepted.')
     parser.add_argument('--load_model', type=bool, default=True, 
                         help='Whether to load the pre-trained model.')
+    parser.add_argument('--train', action='store_true',
+                        help='realtime training')
     parser.add_argument('--load_folder_file', type=list, default=['trainned_models','nnet'], 
                         help='(folder,file) to load the pre-trained model from.')
     args = parser.parse_args()
@@ -52,7 +54,6 @@ def main():
     machine = players[0]
     if args.mode == 'test-model':
         if args.model == 'nnet':
-            pass
             machine.load_model(folder=args.load_folder_file[0], 
                                       filename=args.load_folder_file[1])
             # plot_elo(machine._elo)
@@ -76,8 +77,9 @@ def main():
                 events = pygame.event.get() 
                 for event in events:
                     if event.type == pygame.QUIT:
-                        players[0].save_model(folder=args.load_folder_file[0], 
-                                        filename=args.load_folder_file[1])
+                        if args.train:
+                            players[0].save_model(folder=args.load_folder_file[0], 
+                                            filename=args.load_folder_file[1])
                         sys.exit()
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         mouseX = event.pos[1] # x
@@ -91,11 +93,13 @@ def main():
             else:
                 continue
             x, y = action
-            probs = np.zeros(board.get_state()[0].shape)
-            probs[x][y] = 1
-            sym_boards, sym_pis = env.get_symmetric(board, probs)
-            for sym_board, sym_pi in zip(sym_boards, sym_pis):
-                history.append([sym_board, sym_pi, action, player])
+            
+            if args.train:  
+                probs = np.zeros(board.get_state()[0].shape)
+                probs[x][y] = 1
+                sym_boards, sym_pis = env.get_symmetric(board, probs)
+                for sym_board, sym_pi in zip(sym_boards, sym_pis):
+                    history.append([sym_board, sym_pi, action, player])
                 
             board = env.get_next_state(board, action, player, render=args.show_screen)
             game_over, result = env.get_game_ended(board, env.convert_action_c2i(action))
@@ -110,11 +114,15 @@ def main():
                         _board, pi, act, v = x[0], x[1], x[2], 1
                     else:
                         _board, pi, act, v = x[0], x[1], x[2], -1
-                    trainExamples.append([_board.get_state(), pi, v]) 
-                players[0].learn(trainExamples, epochs=1, batch_size=len(trainExamples))
+                    if args.train:
+                        trainExamples.append([_board.get_state(), pi, v]) 
                 
-                history = []
+                if args.train:
+                    players[0].learn(trainExamples, epochs=1, batch_size=len(trainExamples))
+                
+                    history = []
                 board = env.get_new_board()
+                time.sleep(1)
                 env.restart()
                 env.render()
                 player = np.random.choice([0, 1])
