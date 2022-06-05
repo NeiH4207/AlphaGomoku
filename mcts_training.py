@@ -15,13 +15,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model-name', type=str, default='nnet3x3', 
                         help='name of the model')
-    parser.add_argument('--visualize', type=bool, default=False, 
+    parser.add_argument('--visualize', action='store_true',
                         help='visualize the game')
     parser.add_argument('--height', type=int, default=3, 
                         help='height of the board')
     parser.add_argument('--width', type=int, default=3, 
                         help='width of the board')
-    parser.add_argument('--show_screen', action='store_true', default=True, 
+    parser.add_argument('--show_screen', action='store_true', 
                         help='show the screen')
     parser.add_argument('--speed', type=float, default=0, 
                         help='speed of the game')
